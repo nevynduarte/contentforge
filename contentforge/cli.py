@@ -120,6 +120,47 @@ def track(src: Path, out: Path, every: float = 0.5):
 
 
 @app.command()
+def analyze(clip: Path, every: float = 0.2, force: bool = False):
+    """Track both speakers' faces and detect who is talking; caches results for `shots`."""
+    from .pipeline.shots import analysis_for
+    tr, turns = analysis_for(clip, every, force)
+    found = {s: sum(1 for b in tr.boxes[s] if b) for s in ("L", "R")}
+    console.print(f"samples: {len(tr.times)}  faces found L/R: {found['L']}/{found['R']}")
+    t = Table(title="Speaker turns")
+    for c in ("start", "end", "seat"):
+        t.add_column(c)
+    for tr_ in turns:
+        t.add_row(f"{tr_['start']:.1f}", f"{tr_['end']:.1f}", tr_["seat"])
+    console.print(t)
+
+
+@app.command()
+def shots(clip: Path, dst: Path, words: Optional[Path] = None, plan: Optional[Path] = None,
+          shot: str = typer.Option("speaker", help="speaker | both | speaker_image | stacked | image | auto"),
+          start: float = 0.0, end: Optional[float] = None, question: str = "", image: Optional[Path] = None,
+          brand: str = "bridges_ai", upscale: str = typer.Option("fast", help="none | fast | clean"),
+          keep: Optional[str] = typer.Option(None, help="Kept ranges 'a-b,c-d' in seconds; shots change at each cut"),
+          logo: bool = False, no_captions: bool = False, gpu: bool = True):
+    """Render one of the five shot layouts (or a multi-segment plan) from a graded clip."""
+    from .pipeline.shots import Segment, ShotPlan, auto_plan, render
+    from .pipeline.transcribe import load_words
+    from .utils.ffmpeg import probe
+    b = Brand.load(brand)
+    if plan:
+        p = ShotPlan.load(plan)
+    elif keep:
+        ranges = [tuple(float(x) for x in r.split("-")) for r in keep.split(",")]
+        p = auto_plan(clip, ranges, question, str(image) if image else None, prefer=shot)
+    else:
+        e = end if end is not None else probe(clip).duration
+        p = ShotPlan([Segment(start, e, shot, "auto", str(image) if image else None)], question)
+    p.upscale, p.logo, p.captions = upscale, logo, not no_captions
+    ws = load_words(words) if words else None
+    out = render(clip, p, dst, ws, b, gpu=gpu)
+    console.print(f"[green]done[/green] {out}  ({p.duration:.1f}s, {len(p.segments)} segment(s))")
+
+
+@app.command()
 def presets():
     """List available output presets."""
     from .utils.formats import list_presets, load_preset

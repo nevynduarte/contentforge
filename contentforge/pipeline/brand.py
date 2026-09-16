@@ -108,9 +108,9 @@ def title_card(brand: Brand, title: str, subtitle: str = "", out_w: int = 1080, 
     if subtitle:
         d.text(((out_w - d.textlength(subtitle, font=f2)) // 2, y + 20), subtitle, font=f2, fill=hex_to_rgb(brand.colors["accent"]))
     d.rectangle([out_w // 2 - 60, y + 100, out_w // 2 + 60, y + 108], fill=hex_to_rgb(brand.colors["accent"]))
-    logo = _logo_image(brand, 260)
-    if logo is not None:
-        img.paste(logo, ((out_w - logo.width) // 2, 160), logo)
+    logo = _logo_image(brand, 260 if out_h >= 1200 else 120)
+    if logo is not None and out_h // 2 - (len(lines) * 100) // 2 - 40 > logo.height + 40:
+        img.paste(logo, ((out_w - logo.width) // 2, 40 if out_h < 1200 else 160), logo)
     if dst:
         img.save(dst)
     return img
