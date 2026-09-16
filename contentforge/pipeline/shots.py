@@ -136,9 +136,8 @@ def _portrait_crop(box: tuple[float, float, float, float], aspect: float, src_w:
 def _resize(img: np.ndarray, w: int, h: int, up: Optional[object]) -> np.ndarray:
     """Resize with optional model upscale when enlarging by more than ~1.2x."""
     sh, sw = img.shape[:2]
-    if up is not None and w / sw > 1.2:
-        img = up(img)
-        sh, sw = img.shape[:2]
+    if up is not None and w / sw > 1.6:
+        return up(img, (w, h))          # model upscale + antialiased resize on the GPU
     interp = cv2.INTER_AREA if w < sw else cv2.INTER_LANCZOS4
     return cv2.resize(img, (w, h), interpolation=interp)
 

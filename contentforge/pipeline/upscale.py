@@ -41,7 +41,8 @@ class Upscaler:
         self.torch = torch
         self.scale = getattr(self.m, "scale", 4)
 
-    def __call__(self, rgb: np.ndarray) -> np.ndarray:
+    def __call__(self, rgb: np.ndarray, out_size: Optional[tuple[int, int]] = None) -> np.ndarray:
+        """Upscale; if out_size=(w, h) is given, resize on the GPU (antialiased) before returning."""
         torch = self.torch
         x = torch.from_numpy(np.ascontiguousarray(rgb)).permute(2, 0, 1).unsqueeze(0).float() / 255.0
         if torch.cuda.is_available():
@@ -50,6 +51,9 @@ class Upscaler:
             y = self.m(x)
             if self.m_dn is not None:
                 y = (1 - self.denoise_mix) * y + self.denoise_mix * self.m_dn(x)
+            if out_size is not None:
+                w, h = out_size
+                y = torch.nn.functional.interpolate(y.float(), size=(h, w), mode="bilinear", antialias=True, align_corners=False)
         y = (y.clamp(0, 1) * 255.0).round().byte().squeeze(0).permute(1, 2, 0).cpu().numpy()
         return y
 
