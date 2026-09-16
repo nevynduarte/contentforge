@@ -33,7 +33,7 @@ def main() -> None:
             print(f"{cid}: exists, skipping", flush=True)
             continue
         t0 = time.time()
-        render_preset(studio, dst, "instagram_reel", words, project.brand, gpu=gpu, show_logo=False, max_duration=0)
+        render_preset(studio, dst, "instagram_reel", words, project.brand, gpu=gpu, show_logo=True, max_duration=0)
         print(f"{cid}: {dst.name} {dst.stat().st_size/1e6:.0f}MB in {time.time()-t0:.0f}s", flush=True)
     print("SOCIAL_DONE", flush=True)
 
