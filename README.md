@@ -57,6 +57,32 @@ contentforge copy captions/clip_02_words.json --brand bridges_ai --platform inst
 contentforge thumbnail clip.mp4 thumb.jpg --text "Sold my house in 8th grade" --brand bridges_ai
 ```
 
+## The five shots
+
+```bash
+contentforge analyze clip.mp4                       # face tracks + who-is-talking, cached
+contentforge cuts clip.mp4 --words clip_words.json  # kept ranges with dead air removed
+contentforge shots clip.mp4 out.mp4 --words clip_words.json --shot speaker \
+    --question "How did you fund the first version?" --keep "0-12,20-32,60-72"
+```
+
+| Shot | `--shot` | What it does |
+|---|---|---|
+| S1 speaker only | `speaker` | Tight portrait crop that follows the active speaker; Real-ESRGAN upscale of the crop |
+| S2 both | `both` | Full 16:9 frame letterboxed |
+| S3 speaker + image | `speaker_image --image ref.png` | Reference image on top, speaker crop below |
+| S4 stacked | `stacked` | Head-and-torso of both seats, one above the other |
+| S5 image only | `image --image ref.png` | Reference image over the interview audio |
+
+The question is drawn as a banner at the top, so the clip can skip the host asking it.
+With `--keep`, the shot changes at every join where a fragment was removed, so cuts
+read as edits rather than glitches. Speaker detection is lip-motion energy from
+InsightFace mouth keypoints gated by audio, with pyannote diarization fused in when
+`HF_TOKEN` is set. Reference diagrams come from Mermaid via `contentforge.ai.diagram`.
+
+Heavy assets (torch, model weights, caches) live under `D:\contentforge-cache` on the
+P620; override with `CONTENTFORGE_MODELS` / `CONTENTFORGE_WORK`.
+
 ## Project layout
 
 ```

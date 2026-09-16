@@ -161,6 +161,21 @@ def shots(clip: Path, dst: Path, words: Optional[Path] = None, plan: Optional[Pa
 
 
 @app.command()
+def cuts(clip: Path, words: Optional[Path] = None, start: float = 0.0, end: Optional[float] = None,
+         method: str = typer.Option("auto-editor", help="auto-editor | words"), gap: float = 0.7,
+         drop: Optional[list[str]] = typer.Option(None, help="Phrases to remove (repeatable)")):
+    """Print kept ranges (dead air removed) in the format `shots --keep` accepts."""
+    from .pipeline import cuts as cm
+    from .pipeline.transcribe import load_words
+    ws = load_words(words) if words else None
+    r = cm.auto_editor(clip, start=start, end=end) if method == "auto-editor" else cm.from_words(ws or [], gap, start, end)
+    if drop and ws:
+        r = cm.drop_phrases(ws, r, drop)
+    console.print(f"{len(r)} ranges, {cm.total(r):.1f}s kept")
+    console.print(cm.fmt(r))
+
+
+@app.command()
 def presets():
     """List available output presets."""
     from .utils.formats import list_presets, load_preset
