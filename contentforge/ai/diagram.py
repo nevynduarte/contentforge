@@ -30,9 +30,10 @@ def mermaid_to_png(source: str, dst: str | Path, brand: Optional[Brand] = None, 
     if not mmdc:
         raise RuntimeError("mermaid-cli not found; npm install @mermaid-js/mermaid-cli and set CONTENTFORGE_MMDC")
     brand = brand or Brand()
+    line = brand.colors.get("accent_light", brand.colors["accent"])
     cfg = {"theme": theme, "themeVariables": {
-        "primaryColor": brand.colors["primary"], "primaryTextColor": brand.colors["text"], "primaryBorderColor": brand.colors["accent"],
-        "lineColor": brand.colors["accent"], "secondaryColor": brand.colors["accent"], "tertiaryColor": brand.colors["background"],
+        "primaryColor": brand.colors["primary"], "primaryTextColor": brand.colors["text"], "primaryBorderColor": line,
+        "lineColor": line, "secondaryColor": brand.colors["accent"], "tertiaryColor": brand.colors["background"],
         "fontFamily": "Arial", "fontSize": "32px"},
         "flowchart": {"wrappingWidth": 520, "nodeSpacing": 40, "rankSpacing": 56, "padding": 18}}
     with tempfile.TemporaryDirectory() as td:

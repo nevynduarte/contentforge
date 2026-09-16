@@ -59,7 +59,10 @@ def frame_hook(
     duration: Optional[float] = None,
 ) -> Callable[[Image.Image, float], Image.Image]:
     """Return a per-frame compositor for the caption renderer."""
-    logo = _logo_image(brand, logo_width) if show_logo else None
+    # letterboxed social clips leave an empty band under the captions: centre a large lockup there
+    logo = _logo_image(brand, 420 if out_h > out_w else logo_width) if show_logo else None
+    logo_pos = ((out_w - logo.width) // 2, out_h - logo.height - 70) if (logo is not None and out_h > out_w) else \
+               ((out_w - logo.width - logo_margin, logo_margin) if logo is not None else (0, 0))
     lt_img = None
     if lower_third:
         lt_img = lower_third_image(brand, lower_third.get("name", ""), lower_third.get("title", ""), out_w)
@@ -69,7 +72,7 @@ def frame_hook(
 
     def hook(img: Image.Image, t: float) -> Image.Image:
         if logo is not None:
-            img.paste(logo, (out_w - logo.width - logo_margin, logo_margin), logo)
+            img.paste(logo, logo_pos, logo)
         if lt_img is not None and lt_start <= t <= lt_end:
             fade = min(1.0, (t - lt_start) / 0.35, (lt_end - t) / 0.35)
             if fade < 1.0:

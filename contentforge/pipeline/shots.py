@@ -58,7 +58,7 @@ class ShotPlan:
     segments: list[Segment]
     question: str = ""
     captions: bool = True
-    logo: bool = False
+    logo: bool = True
     upscale: str = "fast"        # none | fast | clean
 
     def save(self, path: str | Path) -> Path:
@@ -69,7 +69,7 @@ class ShotPlan:
     @classmethod
     def load(cls, path: str | Path) -> "ShotPlan":
         d = json.loads(Path(path).read_text(encoding="utf-8"))
-        return cls([Segment(**s) for s in d["segments"]], d.get("question", ""), d.get("captions", True), d.get("logo", False), d.get("upscale", "fast"))
+        return cls([Segment(**s) for s in d["segments"]], d.get("question", ""), d.get("captions", True), d.get("logo", True), d.get("upscale", "fast"))
 
     @property
     def duration(self) -> float:
@@ -179,43 +179,68 @@ class _Smoother:
 # banner + brand overlays
 # ---------------------------------------------------------------------------
 class Banner:
-    def __init__(self, question: str, brand: Brand, logo: bool = False):
+    """Question banner in the brand's editorial style (serif headline, sans eyebrow, ink band, bronze rule)
+    plus the logo lockup, placed per layout: bottom-left over full-bleed video, centred in the empty band otherwise."""
+
+    def __init__(self, question: str, brand: Brand, logo: bool = True):
         self.img = None
+        fonts = brand.raw.get("fonts", {})
+        fdir = [brand.fonts_dir] if brand.fonts_dir else None
+        ink = brand.colors.get("ink", brand.colors["primary"])
+        accent_light = brand.colors.get("accent_light", brand.colors["accent"])
         if question:
-            font = load_font(brand.captions.font, 46, [brand.fonts_dir] if brand.fonts_dir else None)
-            tag_font = load_font(brand.captions.font, 26, [brand.fonts_dir] if brand.fonts_dir else None)
+            font = load_font(fonts.get("display", brand.captions.font), 50, fdir)
+            tag_font = load_font(fonts.get("sans_semibold", brand.captions.font), 22, fdir)
             probe = ImageDraw.Draw(Image.new("RGBA", (4, 4)))
             lines, line = [], ""
             for word in question.split():
-                if probe.textlength((line + " " + word).strip(), font=font) > W - 160:
+                if probe.textlength((line + " " + word).strip(), font=font) > W - 176:
                     lines.append(line.strip())
                     line = word
                 else:
                     line += " " + word
             lines.append(line.strip())
             lines = lines[:3]
-            lh = 56
-            h = 34 + 34 + lh * len(lines)
+            lh = 60
+            h = 36 + 30 + lh * len(lines) + 30
             img = Image.new("RGBA", (W - 80, h), (0, 0, 0, 0))
             d = ImageDraw.Draw(img)
-            d.rounded_rectangle([0, 0, img.width - 1, h - 1], radius=18, fill=hex_to_rgba(brand.colors["primary"], 225))
-            d.rectangle([0, 0, 10, h], fill=hex_to_rgb(brand.colors["accent"]))
-            d.text((30, 20), "QUESTION", font=tag_font, fill=hex_to_rgb(brand.colors["accent"]))
-            y = 54
+            d.rounded_rectangle([0, 0, img.width - 1, h - 1], radius=4, fill=hex_to_rgba(ink, 235))
+            # eyebrow: Inter 600, uppercase, 0.2em tracking, bronze
+            x = 40
+            for ch in "QUESTION":
+                d.text((x, 30), ch, font=tag_font, fill=hex_to_rgb(accent_light))
+                x += d.textlength(ch, font=tag_font) + 22 * 0.2
+            y = 64
             for ln in lines:
-                d.text((30, y), ln, font=font, fill=hex_to_rgb(brand.colors["text"]))
+                d.text((40, y), ln, font=font, fill=hex_to_rgb(brand.colors["text"]))
                 y += lh
+            d.rectangle([40, y + 16, 40 + 48, y + 17], fill=hex_to_rgb(accent_light))   # .rule-accent
             self.img = img
         self.logo = None
+        self.logo_big = None
         if logo and brand.logo and Path(brand.logo).exists():
             lg = Image.open(brand.logo).convert("RGBA")
-            self.logo = lg.resize((120, int(lg.height * 120 / lg.width)), Image.LANCZOS)
+            self.logo = lg.resize((300, int(lg.height * 300 / lg.width)), Image.LANCZOS)
+            self.logo_big = lg.resize((420, int(lg.height * 420 / lg.width)), Image.LANCZOS)
 
-    def draw(self, frame: Image.Image) -> None:
+    def draw(self, frame: Image.Image, shot: str = "speaker") -> None:
         if self.img is not None:
             frame.paste(self.img, (40, BANNER_TOP), self.img)
-        if self.logo is not None:
-            frame.paste(self.logo, (W - self.logo.width - 40, H - self.logo.height - 60), self.logo)
+        if self.logo is None:
+            return
+        if shot in ("speaker", "speaker_image"):
+            # full-bleed video at the bottom: small lockup bottom-left, above the safe zone, with a soft shadow
+            lg = self.logo
+            x, y = 40, H - lg.height - 120
+            shadow = Image.new("RGBA", lg.size, (0, 0, 0, 0))
+            shadow.paste((0, 0, 0, 140), (0, 0, *lg.size), lg)
+            frame.paste(shadow, (x + 2, y + 3), shadow)
+            frame.paste(lg, (x, y), lg)
+        else:
+            # letterboxed layouts leave an empty band at the bottom: centre the lockup there
+            lg = self.logo_big
+            frame.paste(lg, ((W - lg.width) // 2, H - lg.height - 70), lg)
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +275,7 @@ def render(clip: str | Path, plan: ShotPlan, dst: str | Path, words: Optional[li
             if s.start <= w["start"] < s.end:
                 out_words.append({**w, "start": w["start"] - s.start + t_out, "end": min(w["end"], s.end) - s.start + t_out})
         t_out += s.duration
-    cap_y = {"both": 960, "speaker": 1560, "stacked": 1800, "speaker_image": 1720, "image": 1760}
+    cap_y = {"both": 960, "speaker": 1560, "stacked": 1715, "speaker_image": 1700, "image": 1610}
 
     total_frames = int(plan.duration * fps)
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -271,7 +296,7 @@ def render(clip: str | Path, plan: ShotPlan, dst: str | Path, words: Optional[li
                 if shot == "auto":
                     shot = "speaker" if tracks.median_box("L") or tracks.median_box("R") else "both"
                 ref_img = _fit_image(seg.image, W, 800, bg) if seg.image and shot == "speaker_image" else \
-                          _fit_image(seg.image, W, 1500, bg) if seg.image and shot == "image" else None
+                          _fit_image(seg.image, W, 1300, bg) if seg.image and shot == "image" else None
                 if matter is not None:
                     matter.reset()
                 smoother.reset()
@@ -286,7 +311,7 @@ def render(clip: str | Path, plan: ShotPlan, dst: str | Path, words: Optional[li
                     elif shot == "speaker":
                         _paste_speaker(canvas, frame, tracks, seat, t_src, smoother, up, 0, H, info, head_scale=5.4)
                     elif shot == "stacked":
-                        top_h = (1800 - CONTENT_TOP) // 2
+                        top_h = (1700 - CONTENT_TOP) // 2
                         _paste_speaker(canvas, frame, tracks, "L", t_src, smoother, up, CONTENT_TOP, top_h, info, head_scale=3.4)
                         _paste_speaker(canvas, frame, tracks, "R", t_src, smoother, up, CONTENT_TOP + top_h, top_h, info, head_scale=3.4)
                         cv2.line(canvas, (0, CONTENT_TOP + top_h), (W, CONTENT_TOP + top_h), hex_to_rgb(brand.colors["accent"]), 4)
@@ -297,9 +322,9 @@ def render(clip: str | Path, plan: ShotPlan, dst: str | Path, words: Optional[li
                                        head_scale=3.6, matter=matter)
                     elif shot == "image":
                         if ref_img is not None:
-                            canvas[CONTENT_TOP:CONTENT_TOP + 1500] = ref_img
+                            canvas[CONTENT_TOP:CONTENT_TOP + 1300] = ref_img
                     pil = Image.fromarray(canvas)
-                    banner.draw(pil)
+                    banner.draw(pil, shot)
                     if plan.captions and out_words:
                         r = renderers.get(shot)
                         if r is None:

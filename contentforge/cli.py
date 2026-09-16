@@ -140,7 +140,7 @@ def shots(clip: Path, dst: Path, words: Optional[Path] = None, plan: Optional[Pa
           start: float = 0.0, end: Optional[float] = None, question: str = "", image: Optional[Path] = None,
           brand: str = "bridges_ai", upscale: str = typer.Option("fast", help="none | fast | clean"),
           keep: Optional[str] = typer.Option(None, help="Kept ranges 'a-b,c-d' in seconds; shots change at each cut"),
-          logo: bool = False, no_captions: bool = False, gpu: bool = True):
+          logo: bool = typer.Option(True, "--logo/--no-logo"), no_captions: bool = False, gpu: bool = True):
     """Render one of the five shot layouts (or a multi-segment plan) from a graded clip."""
     from .pipeline.shots import Segment, ShotPlan, auto_plan, render
     from .pipeline.transcribe import load_words
