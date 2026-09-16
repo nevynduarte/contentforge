@@ -33,7 +33,8 @@ def mermaid_to_png(source: str, dst: str | Path, brand: Optional[Brand] = None, 
     cfg = {"theme": theme, "themeVariables": {
         "primaryColor": brand.colors["primary"], "primaryTextColor": brand.colors["text"], "primaryBorderColor": brand.colors["accent"],
         "lineColor": brand.colors["accent"], "secondaryColor": brand.colors["accent"], "tertiaryColor": brand.colors["background"],
-        "fontFamily": "Arial", "fontSize": "22px"}}
+        "fontFamily": "Arial", "fontSize": "32px"},
+        "flowchart": {"wrappingWidth": 520, "nodeSpacing": 40, "rankSpacing": 56, "padding": 18}}
     with tempfile.TemporaryDirectory() as td:
         src = Path(td) / "d.mmd"
         src.write_text(source, encoding="utf-8")
