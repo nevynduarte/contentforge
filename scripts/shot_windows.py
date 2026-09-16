@@ -47,6 +47,13 @@ WINDOWS = [
 ]
 
 
+# reference images (relative to the project root) for the image-based layouts
+IMAGES = {
+    "bears": "edit/refs/bears.png", "wrapper": "edit/refs/wrapper.png", "outage": "edit/refs/outage.png",
+    "backend": "edit/refs/backend.png", "smb": "edit/refs/smb.png",
+}
+
+
 def _norm(s: str) -> list[str]:
     return [re.sub(r"[^a-z0-9']", "", w.lower()) for w in s.split()]
 
@@ -97,7 +104,13 @@ def main() -> None:
                 print(f"  {v}: exists", flush=True)
                 continue
             base = "both" if v in ("both", "landscape") else ("stacked" if v == "sidebyside" else v)
-            plan = ShotPlan([Segment(s, e, base, "auto")], question, upscale="none" if v in ("both", "landscape") else "fast")
+            image = None
+            if v in ("speaker_image", "image"):
+                if wid not in IMAGES:
+                    print(f"  {v}: no reference image for {wid}, skipping", flush=True)
+                    continue
+                image = str(project.root / IMAGES[wid])
+            plan = ShotPlan([Segment(s, e, base, "auto", image)], question, upscale="none" if v in ("both", "landscape", "image") else "fast")
             plan.save(out_dir / f"{wid}_{v}.plan.json")
             t0 = time.time()
             if v in ("landscape", "sidebyside"):
