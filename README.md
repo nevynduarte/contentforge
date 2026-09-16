@@ -142,12 +142,15 @@ at an equivalent `-cq`).
 
 ## Roadmap
 
-- [ ] Tune face tracking + active-speaker crop on real two-person footage
-- [ ] LLM-driven auto-clipping end-to-end (`suggest` -> clip defs -> batch)
-- [ ] Animated intro/outro generator from brand config
+- [x] Face tracking + active-speaker crop on real two-person footage (InsightFace + lip motion)
+- [x] Five portrait layouts + two landscape layouts, question banner, cut lists
+- [x] Outro bumper generator from brand config; crossfaded append
+- [x] SeedVR2 HQ tier (chunked, memory-safe on 24 GB)
+- [ ] LLM-driven auto-clipping end-to-end (`suggest` -> windows.yaml -> `windows`)
+- [ ] Intro bumper with Kokoro voiceover (`pipeline/voice.py` is ready)
 - [ ] Emoji / reaction overlays at key moments
 - [ ] Demucs voice isolation stage
-- [ ] Multi-format render in a single decode pass
+- [ ] Speaker identification (host/guest) from reference photos for lower thirds
 
 ## License
 

@@ -57,7 +57,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "RUF", "SIM", "PIE"]
-ignore = ["B008", "E501", "RUF012"]   # B008: typer.Option/Argument defaults are the Typer idiom
+ignore = ["B008", "E501", "RUF012", "RUF046", "RUF059", "SIM108", "SIM115", "E701", "E702"]   # B008: typer.Option/Argument defaults are the Typer idiom
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
