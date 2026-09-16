@@ -1,0 +1,12 @@
+# YouTube Shorts: 9:16, <=60s, end with subscribe CTA, tag #Shorts.
+width: 1080
+height: 1920
+max_duration: 60
+fps: 30
+crf: 20
+layout: letterbox
+video_y: 80
+caption_style: karaoke
+caption_y: 780
+hashtags_max: 3
+notes: "Strong hook; end with subscribe CTA; include #Shorts in title or description."

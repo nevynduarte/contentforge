@@ -1,0 +1,12 @@
+# Manually timed clips (~124 s each). Session 1 = MVI_8425-8427, session 2 = MVI_8428-8430.
+clips:
+  - {id: clip_01, source: MVI_8426, start: 380, duration: 124, title: "Founders and the hard road"}
+  - {id: clip_02, source: MVI_8429, start: 72,  duration: 124, title: "Sold my house on Zillow in 8th grade"}
+  - {id: clip_03, source: MVI_8429, start: 240, duration: 124, title: ""}
+  - {id: clip_04, source: MVI_8430, start: 400, duration: 124, title: ""}
+  - {id: clip_05, source: MVI_8429, start: 302, duration: 124, title: ""}
+  - {id: clip_06, source: MVI_8426, start: 318, duration: 124, title: ""}
+  - {id: clip_07, source: MVI_8429, start: 162, duration: 124, title: ""}
+  - {id: clip_08, source: MVI_8428, start: 824, duration: 124, title: ""}
+  - {id: clip_09, source: MVI_8428, start: 762, duration: 124, title: ""}
+  - {id: clip_10, source: MVI_8425, start: 910, duration: 124, title: ""}

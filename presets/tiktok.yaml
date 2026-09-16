@@ -1,0 +1,12 @@
+# TikTok: 9:16, up to 3 min, hook in first second, on-screen text overlays.
+width: 1080
+height: 1920
+max_duration: 180
+fps: 30
+crf: 20
+layout: letterbox
+video_y: 80
+caption_style: karaoke
+caption_y: 780
+hashtags_max: 5
+notes: "Hook in first 1s. Trending sounds optional. Keep captions above the bottom 400px UI overlay."

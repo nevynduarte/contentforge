@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Media (never commit footage or renders)
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.mkv
+*.m4a
+*.wav
+*.mp3
+*.aac
+# keep small brand bumpers out too; ship them via release assets
+templates/*/intro.mp4
+templates/*/outro.mp4
+
+# Generated
+logs/
+*.tmp.mp4
+*.log
+manifest.json
+.cache/
+models/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets
+.env
+*.key

@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "contentforge"
+version = "0.1.0"
+description = "Turn raw podcast/interview footage into polished, captioned, branded social clips."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10,<3.13"
+authors = [{ name = "Bridges AI", email = "contact@bridgesai.consulting" }]
+keywords = ["video", "podcast", "ffmpeg", "whisper", "captions", "shorts", "reels", "tiktok"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Multimedia :: Video",
+]
+dependencies = [
+  "typer>=0.12",
+  "rich>=13",
+  "tqdm>=4.66",
+  "pyyaml>=6",
+  "numpy>=1.26",
+  "pillow>=10",
+  "pysubs2>=1.7",
+  "pyloudnorm>=0.1",
+  "faster-whisper>=1.1",
+]
+
+[project.optional-dependencies]
+cuda = ["nvidia-cublas-cu12", "nvidia-cudnn-cu12"]                # GPU inference for faster-whisper on Windows/Linux
+tracking = ["mediapipe>=0.10", "opencv-python-headless>=4.9"]     # face detection / smart crop
+diarize = ["pyannote.audio>=3.1", "torch>=2.2"]                   # speaker diarization (needs HF token)
+nlp = ["keybert>=0.8", "anthropic>=0.40"]                         # topic extraction + LLM scoring/copy
+scenes = ["scenedetect[opencv]>=0.6"]                             # shot boundary detection
+separation = ["demucs>=4.0"]                                      # voice/music source separation
+all = ["contentforge[cuda,tracking,diarize,nlp,scenes,separation]"]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+contentforge = "contentforge.cli:app"
+cf = "contentforge.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/nevynduarte/contentforge"
+
+[tool.hatch.build.targets.wheel]
+packages = ["contentforge"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

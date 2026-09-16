@@ -1,0 +1,28 @@
+name: default
+company: ""
+show: ""
+colors:
+  primary: "#0B1F3A"
+  accent: "#00C2A8"
+  highlight: "#FFDC32"
+  background: "#111111"
+  text: "#FFFFFF"
+  muted: "#8A94A6"
+hashtags: []
+captions:
+  font: arialbd.ttf
+  size: 52
+  color: "#FFFFFF"
+  highlight: "#FFDC32"
+  stroke: "#000000"
+  stroke_width: 2
+  pill_color: "#000000"
+  pill_alpha: 180
+  pill_radius: 12
+  pill_pad: 16
+  max_words: 5
+  max_chars: 35
+  hold: 0.4
+  y: 780
+assets: {}
+speakers: {}

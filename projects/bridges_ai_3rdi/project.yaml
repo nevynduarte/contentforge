@@ -1,0 +1,25 @@
+name: bridges_ai_3rdi
+episode: "AI in Safety Tech"
+brand: bridges_ai
+root: C:/Users/User/Documents/3rdiPodcast
+whisper_model: large-v3
+sources:
+  MVI_8425: MVI_8425.MP4
+  MVI_8426: MVI_8426.MP4
+  MVI_8427: MVI_8427.MP4
+  MVI_8428: MVI_8428.MP4
+  MVI_8429: MVI_8429.MP4
+  MVI_8430: MVI_8430.MP4
+audio_sources:
+  session1: Regus.m4a
+  session2: "Regus 2 2.m4a"
+outputs:
+  clips: clips
+  studio: edit/studio
+  social: edit/social
+  captions: captions
+presets:
+  - instagram_reel
+  - youtube_short
+  - tiktok
+clips: clips/

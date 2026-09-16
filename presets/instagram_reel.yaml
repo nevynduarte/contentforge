@@ -1,0 +1,12 @@
+# Instagram Reels: 9:16, <=90s, captions required (most watched muted), hook in first 3s.
+width: 1080
+height: 1920
+max_duration: 90
+fps: 30
+crf: 20
+layout: letterbox
+video_y: 80
+caption_style: karaoke
+caption_y: 780
+hashtags_max: 5
+notes: "Hook in first 3s. 3-5 hashtags in caption. Safe zone: keep text out of the bottom 320px and top 220px."

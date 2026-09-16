@@ -1,0 +1,12 @@
+# Instagram Feed: 4:5 portrait (1080x1350), <=60s, polished. Square variant: set 1080x1080.
+width: 1080
+height: 1350
+max_duration: 60
+fps: 30
+crf: 19
+layout: letterbox
+video_y: 160
+caption_style: bar
+caption_y: 1120
+hashtags_max: 5
+notes: "Polished look; also consider 1080x1080 carousel stills."
