@@ -182,7 +182,8 @@ class Banner:
     """Question banner in the brand's editorial style (serif headline, sans eyebrow, ink band, bronze rule)
     plus the logo lockup, placed per layout: bottom-left over full-bleed video, centred in the empty band otherwise."""
 
-    def __init__(self, question: str, brand: Brand, logo: bool = True):
+    def __init__(self, question: str, brand: Brand, logo: bool = True, width: int = W):
+        self.width = width
         self.img = None
         fonts = brand.raw.get("fonts", {})
         fdir = [brand.fonts_dir] if brand.fonts_dir else None
@@ -194,7 +195,7 @@ class Banner:
             probe = ImageDraw.Draw(Image.new("RGBA", (4, 4)))
             lines, line = [], ""
             for word in question.split():
-                if probe.textlength((line + " " + word).strip(), font=font) > W - 176:
+                if probe.textlength((line + " " + word).strip(), font=font) > width - 176:
                     lines.append(line.strip())
                     line = word
                 else:
@@ -203,7 +204,7 @@ class Banner:
             lines = lines[:3]
             lh = 60
             h = 36 + 30 + lh * len(lines) + 30
-            img = Image.new("RGBA", (W - 80, h), (0, 0, 0, 0))
+            img = Image.new("RGBA", (width - 80, h), (0, 0, 0, 0))
             d = ImageDraw.Draw(img)
             d.rounded_rectangle([0, 0, img.width - 1, h - 1], radius=4, fill=hex_to_rgba(ink, 235))
             # eyebrow: Inter 600, uppercase, 0.2em tracking, bronze
@@ -225,6 +226,17 @@ class Banner:
             self.logo_big = lg.resize((420, int(lg.height * 420 / lg.width)), Image.LANCZOS)
 
     def draw(self, frame: Image.Image, shot: str = "speaker") -> None:
+        if shot in ("landscape", "sidebyside"):
+            if self.img is not None:
+                frame.paste(self.img, (40, 40), self.img)
+            if self.logo is not None:
+                lg = self.logo
+                x, y = frame.width - lg.width - 48, frame.height - lg.height - 44
+                shadow = Image.new("RGBA", lg.size, (0, 0, 0, 0))
+                shadow.paste((0, 0, 0, 140), (0, 0, *lg.size), lg)
+                frame.paste(shadow, (x + 2, y + 3), shadow)
+                frame.paste(lg, (x, y), lg)
+            return
         if self.img is not None:
             frame.paste(self.img, (40, BANNER_TOP), self.img)
         if self.logo is None:
@@ -391,3 +403,88 @@ def _decode(clip: Path, start: float, duration: float, fps: float):
     finally:
         proc.stdout.close()
         proc.wait()
+
+
+# ---------------------------------------------------------------------------
+# landscape (1920x1080)
+#   landscape : full frame, banner top-left, captions bottom, lockup bottom-right
+#   sidebyside: each seat cropped head-and-torso into its own 960x1080 half
+# ---------------------------------------------------------------------------
+def render_landscape(clip: str | Path, plan: ShotPlan, dst: str | Path, words: Optional[list[dict]] = None,
+                     brand: Optional[Brand] = None, mode: str = "landscape", tracks: Optional[Tracks] = None,
+                     fps: float = 30.0, crf: int = 19, gpu: bool = True) -> Path:
+    clip, dst = Path(clip), Path(dst)
+    brand = brand or Brand()
+    info = ffmpeg.probe(clip)
+    fps = min(fps, info.fps)
+    LW, LH = 1920, 1080
+    if mode == "sidebyside" and tracks is None:
+        tracks, _ = analysis_for(clip)
+    up = None
+    if mode == "sidebyside" and plan.upscale != "none":
+        from . import upscale as upmod
+        up = upmod.get(plan.upscale)
+    banner = Banner(plan.question, brand, plan.logo, width=1180)
+    out_words, t_out = [], 0.0
+    for s in plan.segments:
+        for w in (words or []):
+            if s.start <= w["start"] < s.end:
+                out_words.append({**w, "start": w["start"] - s.start + t_out, "end": min(w["end"], s.end) - s.start + t_out})
+        t_out += s.duration
+    style = CaptionStyle(**{**asdict(brand.captions), "y": 940, "size": 46})
+    renderer = CaptionRenderer(out_words, style, LW, LH, "karaoke", brand.fonts_dir) if (plan.captions and out_words) else None
+    total_frames = int(plan.duration * fps)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    tmp_v = dst.with_suffix(".video.tmp.mp4")
+    enc = subprocess.Popen([ffmpeg.which("ffmpeg"), "-hide_banner", "-loglevel", "error", "-y",
+                            "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{LW}x{LH}", "-r", f"{fps:.5f}", "-i", "pipe:0",
+                            *ffmpeg.video_codec_args("libx264", crf, "medium", gpu), "-pix_fmt", "yuv420p", str(tmp_v)],
+                           stdin=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=LW * LH * 3 * 4)
+    progress = Progress(TextColumn("[bold blue]{task.description}"), BarColumn(), TextColumn("{task.completed}/{task.total}"), TimeRemainingColumn())
+    smoother = _Smoother()
+    accent = hex_to_rgb(brand.colors.get("accent_light", brand.colors["accent"]))
+    n_out = 0
+    try:
+        with progress:
+            task = progress.add_task(f"{mode} {dst.name}", total=total_frames)
+            for seg in plan.segments:
+                smoother.reset()
+                for t_src, frame in _decode(clip, seg.start, seg.duration, fps):
+                    t_out = n_out / fps
+                    if mode == "sidebyside":
+                        canvas = np.empty((LH, LW, 3), np.uint8)
+                        canvas[:] = hex_to_rgb(brand.colors["background"])
+                        half = LW // 2
+                        for i, seat in enumerate(("L", "R")):
+                            box = tracks.seat_box(seat, t_src) or tracks.median_box(seat)
+                            if box is None:
+                                continue
+                            sb = smoother(seat, box)
+                            x, y, cw, ch = _portrait_crop(sb, half / LH, info.width, info.height, head_scale=4.6, y_bias=0.16)
+                            canvas[:, i * half:(i + 1) * half] = _resize(frame[y:y + ch, x:x + cw], half, LH, up)
+                        cv2.line(canvas, (half, 0), (half, LH), accent, 4)
+                        pil = Image.fromarray(canvas)
+                    else:
+                        if frame.shape[1] != LW or frame.shape[0] != LH:
+                            frame = cv2.resize(frame, (LW, LH), interpolation=cv2.INTER_AREA)
+                        pil = Image.fromarray(np.ascontiguousarray(frame))
+                    banner.draw(pil, mode)
+                    if renderer is not None:
+                        renderer.composite(pil, t_out)
+                    enc.stdin.write(np.asarray(pil, np.uint8).tobytes())
+                    n_out += 1
+                    if n_out % 15 == 0:
+                        progress.update(task, completed=n_out)
+            progress.update(task, completed=total_frames)
+    finally:
+        enc.stdin.close()
+        enc.wait()
+    if enc.returncode != 0:
+        raise ffmpeg.FFmpegError(enc.stderr.read().decode(errors="replace")[-1500:])
+    parts = "".join(f"[0:a]atrim={s.start:.3f}:{s.end:.3f},asetpts=PTS-STARTPTS[a{i}];" for i, s in enumerate(plan.segments))
+    fc = parts + "".join(f"[a{i}]" for i in range(len(plan.segments))) + f"concat=n={len(plan.segments)}:v=0:a=1[aout]"
+    ffmpeg.run(["-i", str(clip), "-i", str(tmp_v), "-filter_complex", fc, "-map", "1:v", "-map", "[aout]",
+                "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-shortest", str(dst)],
+               duration=plan.duration, description=f"mux {dst.name}", show_progress=False)
+    tmp_v.unlink(missing_ok=True)
+    return dst

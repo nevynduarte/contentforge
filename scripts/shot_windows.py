@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from contentforge.config import Project  # noqa: E402
 from contentforge.pipeline.batch import find_studio, words_path  # noqa: E402
-from contentforge.pipeline.shots import Segment, ShotPlan, analysis_for, render  # noqa: E402
+from contentforge.pipeline.shots import Segment, ShotPlan, analysis_for, render, render_landscape  # noqa: E402
 from contentforge.pipeline.transcribe import load_words  # noqa: E402
 
 # id, clip, question, start anchor, end anchor
@@ -96,10 +96,14 @@ def main() -> None:
             if dst.exists():
                 print(f"  {v}: exists", flush=True)
                 continue
-            plan = ShotPlan([Segment(s, e, v, "auto")], question, upscale="fast" if v != "both" else "none")
+            base = "both" if v in ("both", "landscape") else ("stacked" if v == "sidebyside" else v)
+            plan = ShotPlan([Segment(s, e, base, "auto")], question, upscale="none" if v in ("both", "landscape") else "fast")
             plan.save(out_dir / f"{wid}_{v}.plan.json")
             t0 = time.time()
-            render(studio, plan, dst, words, project.brand, tracks, turns)
+            if v in ("landscape", "sidebyside"):
+                render_landscape(studio, plan, dst, words, project.brand, mode=v, tracks=tracks)
+            else:
+                render(studio, plan, dst, words, project.brand, tracks, turns)
             print(f"  {v}: {dst.name} in {time.time() - t0:.0f}s", flush=True)
         manifest.append({"id": wid, "clip": cid, "question": question, "start": s, "end": e, "variants": variants})
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")

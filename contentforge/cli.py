@@ -136,7 +136,7 @@ def analyze(clip: Path, every: float = 0.2, force: bool = False):
 
 @app.command()
 def shots(clip: Path, dst: Path, words: Optional[Path] = None, plan: Optional[Path] = None,
-          shot: str = typer.Option("speaker", help="speaker | both | speaker_image | stacked | image | auto"),
+          shot: str = typer.Option("speaker", help="speaker | both | speaker_image | stacked | image | landscape | sidebyside | auto"),
           start: float = 0.0, end: Optional[float] = None, question: str = "", image: Optional[Path] = None,
           brand: str = "bridges_ai", upscale: str = typer.Option("fast", help="none | fast | clean"),
           keep: Optional[str] = typer.Option(None, help="Kept ranges 'a-b,c-d' in seconds; shots change at each cut"),
@@ -156,7 +156,11 @@ def shots(clip: Path, dst: Path, words: Optional[Path] = None, plan: Optional[Pa
         p = ShotPlan([Segment(start, e, shot, "auto", str(image) if image else None)], question)
     p.upscale, p.logo, p.captions = upscale, logo, not no_captions
     ws = load_words(words) if words else None
-    out = render(clip, p, dst, ws, b, gpu=gpu)
+    if shot in ("landscape", "sidebyside"):
+        from .pipeline.shots import render_landscape
+        out = render_landscape(clip, p, dst, ws, b, mode=shot, gpu=gpu)
+    else:
+        out = render(clip, p, dst, ws, b, gpu=gpu)
     console.print(f"[green]done[/green] {out}  ({p.duration:.1f}s, {len(p.segments)} segment(s))")
 
 
