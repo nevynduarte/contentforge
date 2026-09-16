@@ -130,11 +130,15 @@ def concat_with_bumpers(main: Path, dst: Path, intro: Optional[Path] = None, out
     args: list[str] = []
     for p in parts:
         args += ["-i", str(p)]
-    fc, prev_v, prev_a, offset = "", "[0:v]", "[0:a]", 0.0
+    # normalise timebase / fps / pixel format / audio format so xfade + acrossfade accept every input
+    fps = round(infos[0].fps, 3)
+    fc = "".join(f"[{i}:v]settb=AVTB,fps={fps},format=yuv420p,setsar=1[v{i}i];"
+                 f"[{i}:a]aformat=sample_rates=48000:channel_layouts=stereo[a{i}i];" for i in range(len(parts)))
+    prev_v, prev_a, offset = "[v0i]", "[a0i]", 0.0
     for i in range(1, len(parts)):
         offset += infos[i - 1].duration - fade
-        fc += f"{prev_v}[{i}:v]xfade=transition=fade:duration={fade}:offset={offset:.3f}[v{i}];"
-        fc += f"{prev_a}[{i}:a]acrossfade=d={fade}[a{i}];"
+        fc += f"{prev_v}[v{i}i]xfade=transition=fade:duration={fade}:offset={offset:.3f}[v{i}];"
+        fc += f"{prev_a}[a{i}i]acrossfade=d={fade}[a{i}];"
         prev_v, prev_a = f"[v{i}]", f"[a{i}]"
     args += ["-filter_complex", fc.rstrip(";"), "-map", prev_v, "-map", prev_a,
              *ffmpeg.video_codec_args("libx264", 20, "medium", gpu), "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
