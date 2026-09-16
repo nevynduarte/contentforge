@@ -12,10 +12,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from contentforge.config import Project  # noqa: E402
-from contentforge.pipeline.batch import find_studio, words_path  # noqa: E402
-from contentforge.pipeline.render import render_preset  # noqa: E402
-from contentforge.utils import ffmpeg  # noqa: E402
+from contentforge.config import Project
+from contentforge.pipeline.batch import find_studio, words_path
+from contentforge.pipeline.render import render_preset
+from contentforge.utils import ffmpeg
 
 
 def main() -> None:

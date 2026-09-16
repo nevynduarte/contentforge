@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Optional
 
 from ..config import Brand
 from .content_scorer import complete
@@ -32,7 +31,7 @@ def generate(text: str, brand: Brand, platform: str = "instagram", episode: str 
         raw = complete(PROMPT.format(show=brand.show or "the show", company=brand.company or "us", episode=episode or "-",
                                      rules=rules, hashtags=" ".join(brand.hashtags), text=text[:6000]), model=model)
         if raw:
-            m = re.search(r"\{.*\}", raw, re.S)
+            m = re.search(r"\{.*\}", raw, re.DOTALL)
             if m:
                 try:
                     d = json.loads(m.group(0))

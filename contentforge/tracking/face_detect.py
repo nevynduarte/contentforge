@@ -6,7 +6,6 @@ Mouth openness is exposed so speaker_focus can estimate who is talking from lip 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 from PIL import Image

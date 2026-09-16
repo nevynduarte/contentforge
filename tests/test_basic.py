@@ -1,9 +1,9 @@
 from PIL import Image
 
 from contentforge.config import Brand, CaptionStyle, Project
+from contentforge.pipeline.audio import PODCAST_VOICE_V2
 from contentforge.pipeline.captions import CaptionRenderer, chunk_words
 from contentforge.pipeline.grade import STUDIO_V2
-from contentforge.pipeline.audio import PODCAST_VOICE_V2
 from contentforge.utils.colors import contrast_ratio, hex_to_rgb
 from contentforge.utils.formats import list_presets, load_preset
 

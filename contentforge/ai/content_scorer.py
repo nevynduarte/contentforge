@@ -10,7 +10,6 @@ import json
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 HOOK_PATTERNS = [
     r"\b(nobody|no one) (tells|talks about)", r"\bthe (biggest|worst|best|hardest)\b", r"\bhere'?s (the thing|why|what)",
@@ -70,20 +69,20 @@ Transcript:
 \"\"\"{text}\"\"\""""
 
 
-def llm_score(text: str, platform: str = "Instagram Reel", model: str = "claude-sonnet-5", provider: str = "auto") -> Optional[dict]:
+def llm_score(text: str, platform: str = "Instagram Reel", model: str = "claude-sonnet-5", provider: str = "auto") -> dict | None:
     """Ask an LLM to rate the excerpt. Returns parsed JSON or None if no provider is configured."""
     prompt = LLM_PROMPT.format(platform=platform, text=text[:6000])
     raw = complete(prompt, model=model, provider=provider)
     if not raw:
         return None
-    m = re.search(r"\{.*\}", raw, re.S)
+    m = re.search(r"\{.*\}", raw, re.DOTALL)
     try:
         return json.loads(m.group(0)) if m else None
     except json.JSONDecodeError:
         return None
 
 
-def complete(prompt: str, model: str = "claude-sonnet-5", provider: str = "auto", max_tokens: int = 800) -> Optional[str]:
+def complete(prompt: str, model: str = "claude-sonnet-5", provider: str = "auto", max_tokens: int = 800) -> str | None:
     """Minimal LLM completion: Anthropic API if ANTHROPIC_API_KEY is set, else local Ollama, else None."""
     if provider in ("auto", "anthropic") and os.environ.get("ANTHROPIC_API_KEY"):
         try:

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
@@ -15,14 +14,14 @@ class Preset:
     name: str
     width: int
     height: int
-    max_duration: Optional[float] = None
+    max_duration: float | None = None
     fps: float = 30.0
     crf: int = 20
     audio_bitrate: str = "192k"
     layout: str = "letterbox"          # letterbox | crop | fit
     caption_style: str = "karaoke"     # karaoke | popup | bar | none
-    caption_y: Optional[int] = None
-    video_y: Optional[int] = None
+    caption_y: int | None = None
+    video_y: int | None = None
     hashtags_max: int = 5
     srt_sidecar: bool = False
     notes: str = ""

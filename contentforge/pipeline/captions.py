@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import os
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Callable, Optional
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -24,7 +24,7 @@ from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 
 from ..config import CaptionStyle
 from ..utils import ffmpeg
-from ..utils.colors import hex_to_rgb, hex_to_rgba
+from ..utils.colors import hex_to_rgba
 
 _FONT_DIRS = [
     Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts",
@@ -75,7 +75,7 @@ class CaptionRenderer:
     """Pre-renders caption strips for a given style, frame width and word list."""
 
     def __init__(self, words: list[dict], style: CaptionStyle, frame_w: int, frame_h: int,
-                 mode: str = "karaoke", fonts_dir: Optional[Path] = None):
+                 mode: str = "karaoke", fonts_dir: Path | None = None):
         self.words, self.style, self.w, self.h, self.mode = words, style, frame_w, frame_h, mode
         self.font = load_font(style.font, style.size, [fonts_dir] if fonts_dir else None)
         if mode == "popup":
@@ -88,7 +88,7 @@ class CaptionRenderer:
         self._line_h = self._probe.textbbox((0, 0), "Hg", font=self.font)[3]
 
     # -- lookup -----------------------------------------------------------
-    def state_at(self, t: float) -> Optional[tuple[int, int]]:
+    def state_at(self, t: float) -> tuple[int, int] | None:
         """(chunk_idx, active_word_idx or -1) for time t, or None if no caption."""
         for cs, ce, i in self.index:
             if cs <= t <= ce:
@@ -153,13 +153,13 @@ def render_captioned_video(
     out_h: int = 1920,
     pre_filter: str = "",
     mode: str = "karaoke",
-    fps: Optional[float] = None,
+    fps: float | None = None,
     crf: int = 20,
     gpu: bool = False,
     audio_bitrate: str = "192k",
-    fonts_dir: Optional[Path] = None,
-    frame_hook: Optional[Callable[[Image.Image, float], Image.Image]] = None,
-    audio_src: Optional[str | Path] = None,
+    fonts_dir: Path | None = None,
+    frame_hook: Callable[[Image.Image, float], Image.Image] | None = None,
+    audio_src: str | Path | None = None,
 ) -> Path:
     """Decode -> composite captions (and optional per-frame hook) -> encode.
 
@@ -226,5 +226,5 @@ def render_captioned_video(
     return dst
 
 
-def style_for_preset(base: CaptionStyle, preset_caption_y: Optional[int]) -> CaptionStyle:
+def style_for_preset(base: CaptionStyle, preset_caption_y: int | None) -> CaptionStyle:
     return replace(base, y=preset_caption_y) if preset_caption_y is not None else base

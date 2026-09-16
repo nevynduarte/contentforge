@@ -30,12 +30,15 @@ dependencies = [
 
 [project.optional-dependencies]
 cuda = ["nvidia-cublas-cu12", "nvidia-cudnn-cu12"]                # GPU inference for faster-whisper on Windows/Linux
-tracking = ["mediapipe>=0.10", "opencv-python-headless>=4.9"]     # face detection / smart crop
+tracking = ["mediapipe>=0.10", "opencv-python-headless>=4.9", "insightface>=0.7", "onnxruntime>=1.18", "norfair>=2.2"]
+shots = ["opencv-python-headless>=4.9", "insightface>=0.7", "onnxruntime>=1.18", "spandrel>=0.4", "torch>=2.4"]  # five-shot renderer + Real-ESRGAN
+voice = ["kokoro>=0.9", "soundfile>=0.12", "misaki[en]>=0.9", "spacy>=3.7"]  # Kokoro TTS for bumpers
+audio = ["pedalboard>=0.9", "auto-editor>=27"]                    # dynamics / ducking, dead-air cuts
 diarize = ["pyannote.audio>=3.1", "torch>=2.2"]                   # speaker diarization (needs HF token)
 nlp = ["keybert>=0.8", "anthropic>=0.40"]                         # topic extraction + LLM scoring/copy
 scenes = ["scenedetect[opencv]>=0.6"]                             # shot boundary detection
 separation = ["demucs>=4.0"]                                      # voice/music source separation
-all = ["contentforge[cuda,tracking,diarize,nlp,scenes,separation]"]
+all = ["contentforge[cuda,tracking,shots,voice,audio,diarize,nlp,scenes,separation]"]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [project.scripts]
@@ -51,6 +54,10 @@ packages = ["contentforge"]
 [tool.ruff]
 line-length = 130
 target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "RUF", "SIM", "PIE"]
+ignore = ["B008", "E501", "RUF012"]   # B008: typer.Option/Argument defaults are the Typer idiom
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

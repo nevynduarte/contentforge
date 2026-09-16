@@ -5,7 +5,6 @@ import json
 import re
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
@@ -28,7 +27,7 @@ PODCAST_VOICE_V2 = (
 CHAINS = {"podcast_voice_v2": PODCAST_VOICE_V2, "none": "anull"}
 
 
-def decode_pcm(path: str | Path, sr: int = 16000, start: float = 0.0, duration: Optional[float] = None) -> np.ndarray:
+def decode_pcm(path: str | Path, sr: int = 16000, start: float = 0.0, duration: float | None = None) -> np.ndarray:
     """Decode mono float32 PCM via ffmpeg (used by sync + speech-activity code)."""
     cmd = [ffmpeg.which("ffmpeg"), "-hide_banner", "-loglevel", "error", "-ss", str(start), "-i", str(path)]
     if duration:
@@ -43,7 +42,7 @@ def measure_loudness(path: str | Path) -> dict:
     cmd = [ffmpeg.which("ffmpeg"), "-hide_banner", "-i", str(path), "-vn",
            "-af", "loudnorm=I=-16:LRA=11:TP=-1.5:print_format=json", "-f", "null", "-"]
     r = subprocess.run(cmd, capture_output=True, text=True)
-    m = re.search(r"\{[^{}]*\}", r.stderr, re.S)
+    m = re.search(r"\{[^{}]*\}", r.stderr, re.DOTALL)
     if not m:
         raise ffmpeg.FFmpegError("loudnorm did not return stats")
     return {k: float(v) if _isnum(v) else v for k, v in json.loads(m.group(0)).items()}
@@ -66,7 +65,7 @@ def find_offset(reference: str | Path, other: str | Path, window: float = 120.0,
     b = decode_pcm(other, sr, 0, window)
     n = min(len(a), len(b))
     a, b = a[:n], b[:n]
-    env = lambda x: np.abs(x) - np.mean(np.abs(x))  # noqa: E731
+    env = lambda x: np.abs(x) - np.mean(np.abs(x))
     fa, fb = np.fft.rfft(env(a), 2 * n), np.fft.rfft(env(b), 2 * n)
     corr = np.fft.irfft(fa * np.conj(fb))
     lag = int(np.argmax(corr))
@@ -93,7 +92,7 @@ def duck_music_filter(voice_label: str = "[0:a]", music_label: str = "[1:a]", mu
             f"[v1][md]amix=inputs=2:duration=first:dropout_transition=2{out_label}")
 
 
-def replace_audio(video: str | Path, audio: str | Path, dst: str | Path, offset: float = 0.0, chain: Optional[str] = None) -> Path:
+def replace_audio(video: str | Path, audio: str | Path, dst: str | Path, offset: float = 0.0, chain: str | None = None) -> Path:
     """Mux a better audio recording onto a video (offset in seconds, positive delays audio)."""
     info = ffmpeg.probe(video)
     args = ["-i", str(video), "-itsoffset", f"{offset:.3f}", "-i", str(audio), "-map", "0:v", "-map", "1:a",

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -35,7 +34,7 @@ def probe(path: Path, recursive: bool = False):
 
 
 @app.command()
-def grade(src: Path, dst: Path, start: Optional[float] = None, duration: Optional[float] = None,
+def grade(src: Path, dst: Path, start: float | None = None, duration: float | None = None,
           crf: int = 18, gpu: bool = False):
     """Apply the studio_v2 grade + podcast voice chain and encode."""
     from .pipeline.grade import grade as g
@@ -43,7 +42,7 @@ def grade(src: Path, dst: Path, start: Optional[float] = None, duration: Optiona
 
 
 @app.command()
-def transcribe(media: Path, out_dir: Optional[Path] = None, model: str = "large-v3", language: str = "en",
+def transcribe(media: Path, out_dir: Path | None = None, model: str = "large-v3", language: str = "en",
                device: str = "auto"):
     """Word-level transcription (faster-whisper); writes <stem>_words.json + <stem>.srt."""
     from .pipeline.transcribe import transcribe as t
@@ -66,7 +65,7 @@ def social(src: Path, words: Path, dst: Path, preset: str = "instagram_reel", br
 
 
 @app.command()
-def batch(project: str, clips: Optional[list[str]] = typer.Argument(None), preset: Optional[list[str]] = typer.Option(None),
+def batch(project: str, clips: list[str] | None = typer.Argument(None), preset: list[str] | None = typer.Option(None),
           force_grade: bool = False, force_words: bool = False, force_render: bool = False, gpu: bool = False,
           no_logo: bool = False):
     """Run the whole pipeline for a project (grade -> words -> presets -> manifest)."""
@@ -92,7 +91,7 @@ def suggest(words: Path, n: int = 5, platform: str = "Instagram Reel", llm: bool
 
 
 @app.command()
-def copy(words: Path, brand: str = "default", platform: str = "instagram", llm: bool = True, out: Optional[Path] = None):
+def copy(words: Path, brand: str = "default", platform: str = "instagram", llm: bool = True, out: Path | None = None):
     """Generate title / caption / hashtags for a clip transcript."""
     from .ai.social_copy import generate
     from .pipeline.transcribe import load_words, words_to_text
@@ -103,7 +102,7 @@ def copy(words: Path, brand: str = "default", platform: str = "instagram", llm: 
 
 
 @app.command()
-def thumbnail(src: Path, dst: Path, text: str = "", brand: str = "default", t: Optional[float] = None,
+def thumbnail(src: Path, dst: Path, text: str = "", brand: str = "default", t: float | None = None,
               width: int = 1080, height: int = 1920):
     """Pick a sharp, well-lit frame and overlay title text."""
     from .ai.thumbnail import make_thumbnail
@@ -135,11 +134,11 @@ def analyze(clip: Path, every: float = 0.2, force: bool = False):
 
 
 @app.command()
-def shots(clip: Path, dst: Path, words: Optional[Path] = None, plan: Optional[Path] = None,
+def shots(clip: Path, dst: Path, words: Path | None = None, plan: Path | None = None,
           shot: str = typer.Option("speaker", help="speaker | both | speaker_image | stacked | image | landscape | sidebyside | auto"),
-          start: float = 0.0, end: Optional[float] = None, question: str = "", image: Optional[Path] = None,
+          start: float = 0.0, end: float | None = None, question: str = "", image: Path | None = None,
           brand: str = "bridges_ai", upscale: str = typer.Option("fast", help="none | fast | clean"),
-          keep: Optional[str] = typer.Option(None, help="Kept ranges 'a-b,c-d' in seconds; shots change at each cut"),
+          keep: str | None = typer.Option(None, help="Kept ranges 'a-b,c-d' in seconds; shots change at each cut"),
           logo: bool = typer.Option(True, "--logo/--no-logo"), no_captions: bool = False, gpu: bool = True):
     """Render one of the five shot layouts (or a multi-segment plan) from a graded clip."""
     from .pipeline.shots import Segment, ShotPlan, auto_plan, render
@@ -165,9 +164,9 @@ def shots(clip: Path, dst: Path, words: Optional[Path] = None, plan: Optional[Pa
 
 
 @app.command()
-def cuts(clip: Path, words: Optional[Path] = None, start: float = 0.0, end: Optional[float] = None,
+def cuts(clip: Path, words: Path | None = None, start: float = 0.0, end: float | None = None,
          method: str = typer.Option("auto-editor", help="auto-editor | words"), gap: float = 0.7,
-         drop: Optional[list[str]] = typer.Option(None, help="Phrases to remove (repeatable)")):
+         drop: list[str] | None = typer.Option(None, help="Phrases to remove (repeatable)")):
     """Print kept ranges (dead air removed) in the format `shots --keep` accepts."""
     from .pipeline import cuts as cm
     from .pipeline.transcribe import load_words
@@ -177,6 +176,62 @@ def cuts(clip: Path, words: Optional[Path] = None, start: float = 0.0, end: Opti
         r = cm.drop_phrases(ws, r, drop)
     console.print(f"{len(r)} ranges, {cm.total(r):.1f}s kept")
     console.print(cm.fmt(r))
+
+
+@app.command("transcribe-project")
+def transcribe_project_cmd(project: str, sessions: bool = typer.Option(False, help="Full session encodes instead of clips"),
+                           model: str | None = None, force: bool = False):
+    """Word-level transcripts for every clip (or session) of a project, plus a combined Markdown transcript."""
+    from .pipeline.transcribe import transcribe_project
+    out = transcribe_project(Project.load(project), sessions, model, force)
+    console.print(f"[green]{len(out) - 1} transcripts[/green]; combined -> {out['combined']}")
+
+
+@app.command()
+def windows(project: str, ids: list[str] | None = typer.Argument(None),
+            variant: list[str] | None = typer.Option(None, "--variant", "-v", help="speaker | stacked | both | landscape | sidebyside | speaker_image | image"),
+            force: bool = False):
+    """Render the project's transcript-anchored short windows (projects/<name>/windows.yaml) in each layout."""
+    from .pipeline.windows import DEFAULT_VARIANTS, render_windows
+    p = Project.load(project)
+    m = render_windows(p, variant or DEFAULT_VARIANTS, ids or None, force=force)
+    console.print(f"[green]{len(m)} windows[/green] -> {p.root / 'edit' / 'shorts'}")
+
+
+@app.command()
+def diagrams(project: str):
+    """Render the Mermaid diagrams in windows.yaml to brand-coloured reference images (edit/refs/)."""
+    from .pipeline.windows import make_diagrams
+    for pth in make_diagrams(Project.load(project)):
+        console.print(pth)
+
+
+@app.command()
+def outro(project: str, episode: str | None = None, cta: str = "Follow for more", url: str = "", duration: float = 5.0):
+    """Build the branded portrait + landscape outro bumpers (edit/bumpers/)."""
+    from .pipeline.bumper import make_outros
+    p = Project.load(project)
+    out = make_outros(p.brand, p.root / "edit" / "bumpers", episode if episode is not None else p.episode, cta, url, duration)
+    for k, v in out.items():
+        console.print(f"{k}: {v}")
+
+
+@app.command("append-outros")
+def append_outros_cmd(project: str, src: str = "edit/shorts", dst: str = "edit/final", force: bool = False):
+    """Append the orientation-matched outro to every clip in src, writing to dst."""
+    from .pipeline.bumper import append_outros
+    p = Project.load(project)
+    done = append_outros(p.root / src, p.root / dst, p.root / "edit" / "bumpers", force)
+    console.print(f"[green]{len(done)} clips[/green] -> {p.root / dst}")
+
+
+@app.command()
+def hq(project: str, ids: list[str] | None = typer.Argument(None), model: str = "seedvr2_ema_3b_fp16.safetensors",
+       batch_size: int = 5, force: bool = False):
+    """High-quality speaker shorts: plain render -> SeedVR2 restore -> overlays -> outro (slow, GPU)."""
+    from .pipeline.hq import hq_speaker
+    outs = hq_speaker(Project.load(project), ids or None, model=model, batch_size=batch_size, force=force)
+    console.print(f"[green]{len(outs)} HQ clips[/green]")
 
 
 @app.command()
@@ -195,10 +250,10 @@ def presets():
 @app.command()
 def doctor():
     """Check ffmpeg, NVENC, CUDA for whisper, fonts."""
-    from .utils import ffmpeg as f
     from .pipeline.captions import load_font
     from .pipeline.transcribe import _enable_cuda_dlls
-    ok = lambda b: "[green]ok[/green]" if b else "[red]missing[/red]"  # noqa: E731
+    from .utils import ffmpeg as f
+    ok = lambda b: "[green]ok[/green]" if b else "[red]missing[/red]"
     try:
         f.which("ffmpeg"); f.which("ffprobe"); ff = True
     except f.FFmpegError:

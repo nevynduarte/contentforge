@@ -7,7 +7,6 @@ Filters run on CPU; encoding can optionally go through NVENC.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ..utils import ffmpeg
 from .audio import PODCAST_VOICE_V2
@@ -28,8 +27,8 @@ GRADES = {"studio_v2": STUDIO_V2, "none": "null"}
 def grade(
     src: str | Path,
     dst: str | Path,
-    start: Optional[float] = None,
-    duration: Optional[float] = None,
+    start: float | None = None,
+    duration: float | None = None,
     video_filters: str = STUDIO_V2,
     audio_filters: str = PODCAST_VOICE_V2,
     crf: int = 18,

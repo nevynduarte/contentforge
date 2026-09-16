@@ -15,10 +15,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from contentforge.config import Project  # noqa: E402
-from contentforge.pipeline.batch import find_studio, words_path  # noqa: E402
-from contentforge.pipeline.shots import Segment, ShotPlan, analysis_for, render, render_landscape  # noqa: E402
-from contentforge.pipeline.transcribe import load_words  # noqa: E402
+from contentforge.config import Project
+from contentforge.pipeline.batch import find_studio, words_path
+from contentforge.pipeline.shots import Segment, ShotPlan, analysis_for, render, render_landscape
+from contentforge.pipeline.transcribe import load_words
 
 # id, clip, question, start anchor, end anchor
 WINDOWS = [

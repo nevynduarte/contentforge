@@ -18,13 +18,13 @@ def hex_to_rgba(h: str, alpha: int = 255) -> RGBA:
 
 
 def rgb_to_hex(rgb: RGB) -> str:
-    return "#%02X%02X%02X" % rgb
+    return "#{:02X}{:02X}{:02X}".format(*rgb)
 
 
 def ffmpeg_color(h: str, alpha: float | None = None) -> str:
     """ffmpeg accepts 0xRRGGBB or 0xRRGGBB@alpha."""
     base = "0x" + h.lstrip("#").upper()
-    return base + ("@%s" % alpha if alpha is not None else "")
+    return base + (f"@{alpha}" if alpha is not None else "")
 
 
 def relative_luminance(rgb: RGB) -> float:

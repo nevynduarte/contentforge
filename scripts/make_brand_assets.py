@@ -10,12 +10,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from PIL import Image, ImageDraw  # noqa: E402
+from PIL import Image, ImageDraw
 
-from contentforge.config import Brand, TEMPLATES_DIR  # noqa: E402
-from contentforge.pipeline.brand import lower_third_image  # noqa: E402
-from contentforge.pipeline.captions import load_font  # noqa: E402
-from contentforge.utils.colors import hex_to_rgb  # noqa: E402
+from contentforge.config import TEMPLATES_DIR, Brand
+from contentforge.pipeline.brand import lower_third_image
+from contentforge.pipeline.captions import load_font
+from contentforge.utils.colors import hex_to_rgb
 
 
 def make_logo(brand: Brand, dst: Path, size: int = 512) -> None:

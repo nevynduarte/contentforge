@@ -8,7 +8,6 @@ from __future__ import annotations
 import math
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -60,7 +59,7 @@ def outro(brand: Brand, dst: str | Path, width: int = 1080, height: int = 1920, 
             if logo is not None and a > 0:
                 s = 1.08 - 0.08 * a
                 lg = logo.resize((int(logo.width * s), int(logo.height * s)), Image.LANCZOS)
-                alpha = lg.split()[3].point(lambda v: int(v * a))
+                alpha = lg.split()[3].point(lambda v, a=a: int(v * a))
                 lg.putalpha(alpha)
                 img.paste(lg, ((width - lg.width) // 2, cy - lg.height // 2 - 40), lg)
             # 2. bronze rule draws left-to-right
@@ -105,3 +104,35 @@ def append_outro(clip: str | Path, outro_path: str | Path, dst: str | Path, fade
     """clip + outro with a short crossfade; output matches the clip's resolution."""
     from .brand import concat_with_bumpers
     return concat_with_bumpers(Path(clip), Path(dst), None, Path(outro_path), fade=fade, gpu=gpu)
+
+
+def make_outros(brand: Brand, out_dir: str | Path, episode: str = "", cta: str = "Follow for more", url: str = "",
+                duration: float = 5.0) -> dict[str, Path]:
+    """Portrait + landscape outro bumpers for a project."""
+    out_dir = Path(out_dir)
+    return {"portrait": outro(brand, out_dir / "outro_portrait.mp4", 1080, 1920, duration, episode=episode, cta=cta, url=url),
+            "landscape": outro(brand, out_dir / "outro_landscape.mp4", 1920, 1080, duration, episode=episode, cta=cta, url=url)}
+
+
+def outro_for(video: str | Path, bumpers_dir: str | Path) -> Path:
+    """Pick the orientation-matched outro for a clip."""
+    info = ffmpeg.probe(video)
+    return Path(bumpers_dir) / ("outro_portrait.mp4" if info.height > info.width else "outro_landscape.mp4")
+
+
+def append_outros(src_dir: str | Path, out_dir: str | Path, bumpers_dir: str | Path, force: bool = False,
+                  pattern: str = "*.mp4") -> list[Path]:
+    """Append the matching outro to every clip in src_dir, writing to out_dir (existing outputs are kept)."""
+    src_dir, out_dir = Path(src_dir), Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    done = []
+    for f in sorted(src_dir.glob(pattern)):
+        if ".tmp" in f.name:
+            continue
+        dst = out_dir / f.name
+        if dst.exists() and not force and ffmpeg.is_healthy(dst):
+            done.append(dst)
+            continue
+        append_outro(f, outro_for(f, bumpers_dir), dst)
+        done.append(dst)
+    return done

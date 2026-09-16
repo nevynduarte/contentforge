@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
 from ..config import Brand
 from ..pipeline.captions import load_font
@@ -40,8 +39,8 @@ def best_frame_time(src: str | Path, samples: int = 12, skip_head: float = 1.0) 
     return best_t
 
 
-def make_thumbnail(src: str | Path, dst: str | Path, text: str = "", brand: Optional[Brand] = None,
-                   t: Optional[float] = None, width: int = 1080, height: int = 1920) -> Path:
+def make_thumbnail(src: str | Path, dst: str | Path, text: str = "", brand: Brand | None = None,
+                   t: float | None = None, width: int = 1080, height: int = 1920) -> Path:
     brand = brand or Brand()
     t = best_frame_time(src) if t is None else t
     with tempfile.TemporaryDirectory() as td:

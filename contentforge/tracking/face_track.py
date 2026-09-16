@@ -13,7 +13,6 @@ import json
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -28,7 +27,7 @@ MOUTH_PATCH = (48, 24)
 @dataclass
 class Det:
     x: float; y: float; w: float; h: float          # normalized box
-    mouth: Optional[tuple[float, float, float, float]] = None  # normalized mouth patch box
+    mouth: tuple[float, float, float, float] | None = None  # normalized mouth patch box
     score: float = 1.0
 
     @property
@@ -43,7 +42,7 @@ class Tracks:
     height: int
     every: float
     times: list[float] = field(default_factory=list)
-    boxes: dict[str, list[Optional[tuple[float, float, float, float]]]] = field(default_factory=lambda: {"L": [], "R": []})
+    boxes: dict[str, list[tuple[float, float, float, float] | None]] = field(default_factory=lambda: {"L": [], "R": []})
     mouth: dict[str, list[float]] = field(default_factory=lambda: {"L": [], "R": []})   # lip motion energy per sample
 
     def save(self, path: str | Path) -> Path:
@@ -52,14 +51,14 @@ class Tracks:
         return Path(path)
 
     @classmethod
-    def load(cls, path: str | Path) -> "Tracks":
+    def load(cls, path: str | Path) -> Tracks:
         d = json.loads(Path(path).read_text(encoding="utf-8"))
         t = cls(d["duration"], d["width"], d["height"], d["every"], d["times"])
         t.boxes = {k: [tuple(b) if b else None for b in v] for k, v in d["boxes"].items()}
         t.mouth = d["mouth"]
         return t
 
-    def seat_box(self, seat: str, t: float) -> Optional[tuple[float, float, float, float]]:
+    def seat_box(self, seat: str, t: float) -> tuple[float, float, float, float] | None:
         """Nearest valid box (pixels: x, y, w, h) for a seat at time t."""
         if not self.times:
             return None
@@ -70,7 +69,7 @@ class Tracks:
                 return (b[0] * self.width, b[1] * self.height, b[2] * self.width, b[3] * self.height)
         return None
 
-    def median_box(self, seat: str) -> Optional[tuple[float, float, float, float]]:
+    def median_box(self, seat: str) -> tuple[float, float, float, float] | None:
         bs = [b for b in self.boxes[seat] if b]
         if not bs:
             return None
@@ -88,6 +87,7 @@ def _insightface():
     global _app
     if _app is None:
         from insightface.app import FaceAnalysis  # type: ignore
+
         from ..utils.paths import MODELS_DIR
         _app = FaceAnalysis(name="buffalo_l", allowed_modules=["detection"], providers=["CPUExecutionProvider"],
                             root=str(MODELS_DIR.parent / "insightface"))
@@ -154,11 +154,11 @@ def analyze(src: str | Path, every: float = 0.2, sample_width: int = 1280) -> Tr
     src = Path(src)
     info = ffmpeg.probe(src)
     tr = Tracks(info.duration, info.width, info.height, every)
-    prev_patch: dict[str, Optional[np.ndarray]] = {"L": None, "R": None}
+    prev_patch: dict[str, np.ndarray | None] = {"L": None, "R": None}
     split = 0.5
     for t, frame in _iter_frames(src, every, sample_width):
         dets = detect(frame)[:2]
-        slot: dict[str, Optional[Det]] = {"L": None, "R": None}
+        slot: dict[str, Det | None] = {"L": None, "R": None}
         if len(dets) == 2:
             a, b = sorted(dets, key=lambda d: d.cx)
             slot["L"], slot["R"] = a, b

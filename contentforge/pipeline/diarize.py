@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
 
 
-def diarize(media: str | Path, num_speakers: Optional[int] = 2, hf_token: Optional[str] = None) -> list[dict]:
+def diarize(media: str | Path, num_speakers: int | None = 2, hf_token: str | None = None) -> list[dict]:
     """Return [{"start", "end", "speaker"}] turns."""
     try:
         from pyannote.audio import Pipeline  # type: ignore

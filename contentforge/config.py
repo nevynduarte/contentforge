@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -39,17 +39,17 @@ class Brand:
         "primary": "#0B1F3A", "accent": "#00C2A8", "highlight": "#FFDC32",
         "background": "#111111", "text": "#FFFFFF", "muted": "#8A94A6"})
     hashtags: list[str] = field(default_factory=list)
-    logo: Optional[Path] = None
-    lower_third: Optional[Path] = None
-    intro: Optional[Path] = None
-    outro: Optional[Path] = None
-    fonts_dir: Optional[Path] = None
+    logo: Path | None = None
+    lower_third: Path | None = None
+    intro: Path | None = None
+    outro: Path | None = None
+    fonts_dir: Path | None = None
     captions: CaptionStyle = field(default_factory=CaptionStyle)
     speakers: dict[str, dict[str, str]] = field(default_factory=dict)
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def load(cls, name_or_path: str | Path) -> "Brand":
+    def load(cls, name_or_path: str | Path) -> Brand:
         p = Path(name_or_path)
         if p.is_dir():
             p = p / "config.yaml"
@@ -61,7 +61,7 @@ class Brand:
         d = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
         cap = CaptionStyle(**{k: v for k, v in (d.get("captions") or {}).items() if k in CaptionStyle.__dataclass_fields__})
 
-        def asset(key: str) -> Optional[Path]:
+        def asset(key: str) -> Path | None:
             v = d.get("assets", {}).get(key)
             if not v:
                 return None
@@ -125,7 +125,7 @@ class Project:
         return (self.root / self.sources.get(key, key)).resolve()
 
     @classmethod
-    def load(cls, name_or_path: str | Path) -> "Project":
+    def load(cls, name_or_path: str | Path) -> Project:
         p = Path(name_or_path)
         if p.is_dir():
             p = p / "project.yaml"

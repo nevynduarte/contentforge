@@ -10,7 +10,6 @@ Output is a list of turns [{"start","end","seat"}] plus per-word seat labels.
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 import numpy as np
 
@@ -43,15 +42,15 @@ def seat_timeline(tr: Tracks, media: str, hold: float = 0.8, margin: float = 1.1
     """Turns from lip motion. A switch needs the other seat to lead by `margin` for `hold` seconds."""
     scores = lip_scores(tr)
     active = _audio_activity(media, tr.times, tr.every)
-    cur: Optional[str] = None
+    cur: str | None = None
     cand, cand_since = None, 0.0
     turns: list[dict] = []
     for i, t in enumerate(tr.times):
-        l, r = scores["L"][i], scores["R"][i]
-        if not active[i] or (l == 0 and r == 0):
+        left, right = scores["L"][i], scores["R"][i]
+        if not active[i] or (left == 0 and right == 0):
             want = cur
         else:
-            want = "L" if l >= r * margin else ("R" if r >= l * margin else cur)
+            want = "L" if left >= right * margin else ("R" if right >= left * margin else cur)
         if cur is None and want:
             cur, cand = want, None
             turns.append({"start": t, "end": t, "seat": cur})
@@ -72,7 +71,7 @@ def seat_timeline(tr: Tracks, media: str, hold: float = 0.8, margin: float = 1.1
     return turns
 
 
-def diarize_turns(media: str, num_speakers: int = 2) -> Optional[list[dict]]:
+def diarize_turns(media: str, num_speakers: int = 2) -> list[dict] | None:
     token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
     if not token:
         return None
@@ -83,7 +82,7 @@ def diarize_turns(media: str, num_speakers: int = 2) -> Optional[list[dict]]:
         return None
 
 
-def fuse(lip_turns: list[dict], dia: Optional[list[dict]], tr: Tracks) -> list[dict]:
+def fuse(lip_turns: list[dict], dia: list[dict] | None, tr: Tracks) -> list[dict]:
     """Map diarization labels to seats by overlap with lip turns; prefer diarization boundaries when available."""
     if not dia:
         return lip_turns
@@ -95,7 +94,7 @@ def fuse(lip_turns: list[dict], dia: Optional[list[dict]], tr: Tracks) -> list[d
             overlap[d["speaker"]][lt["seat"]] += o
     mapping = {lbl: max(SEATS, key=lambda s: overlap[lbl][s]) for lbl in labels}
     if len(labels) >= 2 and len(set(mapping.values())) == 1:  # both mapped to same seat: force the weaker onto the other
-        weakest = min(labels, key=lambda l: max(overlap[l].values()))
+        weakest = min(labels, key=lambda lbl: max(overlap[lbl].values()))
         mapping[weakest] = "R" if mapping[weakest] == "L" else "L"
     out = [{"start": d["start"], "end": d["end"], "seat": mapping[d["speaker"]]} for d in dia]
     merged: list[dict] = []

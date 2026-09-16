@@ -7,7 +7,6 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 from pathlib import Path
-from typing import Optional
 
 from ..config import Brand
 from ..utils import ffmpeg
@@ -22,13 +21,13 @@ def render_preset(
     src: str | Path,
     dst: str | Path,
     preset: str | Preset,
-    words_json: Optional[str | Path] = None,
-    brand: Optional[Brand] = None,
+    words_json: str | Path | None = None,
+    brand: Brand | None = None,
     crop_mode: str = "center",
     gpu: bool = False,
-    lower_third: Optional[dict] = None,
+    lower_third: dict | None = None,
     show_logo: bool = True,
-    max_duration: Optional[float] = None,
+    max_duration: float | None = None,
 ) -> Path:
     """Render `src` (a graded landscape clip) into a platform-specific output."""
     p = load_preset(preset) if isinstance(preset, str) else preset
@@ -70,6 +69,6 @@ def write_manifest(entries: list[dict], path: str | Path) -> Path:
     return Path(path)
 
 
-def manifest_entry(clip_id: str, outputs: dict[str, Path], meta: Optional[dict] = None, preset: Optional[Preset] = None) -> dict:
+def manifest_entry(clip_id: str, outputs: dict[str, Path], meta: dict | None = None, preset: Preset | None = None) -> dict:
     return {"clip": clip_id, "outputs": {k: str(v) for k, v in outputs.items()},
             "preset": asdict(preset) if preset else None, "meta": meta or {}}

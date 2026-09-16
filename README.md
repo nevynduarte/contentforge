@@ -66,22 +66,53 @@ contentforge shots clip.mp4 out.mp4 --words clip_words.json --shot speaker \
     --question "How did you fund the first version?" --keep "0-12,20-32,60-72"
 ```
 
-| Shot | `--shot` | What it does |
-|---|---|---|
-| S1 speaker only | `speaker` | Tight portrait crop that follows the active speaker; Real-ESRGAN upscale of the crop |
-| S2 both | `both` | Full 16:9 frame letterboxed |
-| S3 speaker + image | `speaker_image --image ref.png` | Reference image on top, speaker crop below |
-| S4 stacked | `stacked` | Head-and-torso of both seats, one above the other |
-| S5 image only | `image --image ref.png` | Reference image over the interview audio |
+| Shot | `--shot` | Size | What it does |
+|---|---|---|---|
+| S1 speaker only | `speaker` | 1080x1920 | Tight portrait crop following the active speaker; Real-ESRGAN upscale of the crop |
+| S2 both | `both` | 1080x1920 | Full 16:9 frame letterboxed |
+| S3 speaker + image | `speaker_image --image ref.png` | 1080x1920 | Reference image on top, speaker crop below |
+| S4 stacked | `stacked` | 1080x1920 | Head-and-torso of both seats, one above the other |
+| S5 image only | `image --image ref.png` | 1080x1920 | Reference image over the interview audio |
+| Landscape | `landscape` | 1920x1080 | Full frame, banner top-left, lockup bottom-right |
+| Side by side | `sidebyside` | 1920x1080 | Each seat's head-and-torso fills half the frame |
 
 The question is drawn as a banner at the top, so the clip can skip the host asking it.
 With `--keep`, the shot changes at every join where a fragment was removed, so cuts
 read as edits rather than glitches. Speaker detection is lip-motion energy from
 InsightFace mouth keypoints gated by audio, with pyannote diarization fused in when
-`HF_TOKEN` is set. Reference diagrams come from Mermaid via `contentforge.ai.diagram`.
+`HF_TOKEN` is set.
 
-Heavy assets (torch, model weights, caches) live under `D:\contentforge-cache` on the
-P620; override with `CONTENTFORGE_MODELS` / `CONTENTFORGE_WORK`.
+### Windows, bumpers, and the HQ tier
+
+A project can define transcript-anchored moments in `projects/<name>/windows.yaml`
+(id, clip, question, first/last words, optional reference image) plus the Mermaid
+sources for those images. Then:
+
+```bash
+contentforge diagrams bridges_ai_3rdi                  # Mermaid -> edit/refs/*.png in brand colours
+contentforge windows bridges_ai_3rdi                   # every window in speaker/stacked/both/landscape/sidebyside
+contentforge windows bridges_ai_3rdi -v speaker_image -v image   # the image layouts (windows with an image)
+contentforge outro bridges_ai_3rdi --url bridgesai.consulting    # portrait + landscape outro bumpers
+contentforge append-outros bridges_ai_3rdi             # edit/shorts -> edit/final with a crossfaded outro
+contentforge hq bridges_ai_3rdi zillow                 # SeedVR2-restored speaker short (slow, best quality)
+```
+
+The HQ tier renders the speaker crop without overlays, restores it with SeedVR2 3B
+(Apache-2.0, runs on a 24 GB card) through the numz CLI checkout, then overlays banner,
+captions and lockup and appends the outro. Expect minutes per clip.
+
+Heavy assets (torch, model weights, SeedVR2 checkout, caches) live under
+`D:\contentforge-cache` on the P620; override with `CONTENTFORGE_MODELS`,
+`CONTENTFORGE_WORK`, `CONTENTFORGE_SEEDVR2` and `CONTENTFORGE_MMDC`.
+
+### Brand template
+
+`templates/bridges_ai/config.yaml` carries the design-system tokens (paper, navy ink,
+bronze accent), the fonts (Inter for UI and captions, Source Serif 4 for the question),
+and the official lockup. Question banners use the serif with an Inter eyebrow; captions
+are Inter Bold with a warm-gold active word on a squared ink pill. The lockup sits
+bottom-right on landscape, bottom-left over full-bleed portrait video, and centred in
+the empty band on letterboxed portrait layouts.
 
 ## Project layout
 

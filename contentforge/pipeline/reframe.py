@@ -10,14 +10,14 @@ Layouts (as ffmpeg -vf chains that produce exactly out_w x out_h):
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, Sequence
 
 from ..utils.colors import ffmpeg_color
 from ..utils.ffmpeg import MediaInfo
 
 
-def letterbox(info: MediaInfo, out_w: int = 1080, out_h: int = 1920, video_y: Optional[int] = 80,
+def letterbox(info: MediaInfo, out_w: int = 1080, out_h: int = 1920, video_y: int | None = 80,
               bg: str = "#111111") -> str:
     vh = round(out_w * info.height / info.width)
     vh -= vh % 2
@@ -70,7 +70,7 @@ def tracked_crop(info: MediaInfo, trajectory: Sequence[tuple[float, float]], out
     return f"sendcmd=f='{cmd_path}',crop={cw}:{ch}:0:0,scale={out_w}:{out_h}:flags=lanczos"
 
 
-def filter_for_layout(info: MediaInfo, layout: str, out_w: int, out_h: int, video_y: Optional[int] = None,
+def filter_for_layout(info: MediaInfo, layout: str, out_w: int, out_h: int, video_y: int | None = None,
                       bg: str = "#111111", crop_mode: str = "center") -> str:
     if layout == "letterbox":
         return letterbox(info, out_w, out_h, video_y, bg)

@@ -12,14 +12,14 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional
 
 Range = tuple[float, float]
 
 
 def auto_editor(media: str | Path, threshold: str = "4%", margin: str = "0.2s", start: float = 0.0,
-                end: Optional[float] = None) -> list[Range]:
+                end: float | None = None) -> list[Range]:
     exe = shutil.which("auto-editor") or str(Path(__import__("sys").executable).parent / "auto-editor.exe")
     with tempfile.TemporaryDirectory() as td:
         out = Path(td) / "tl.v3"
@@ -39,7 +39,7 @@ def auto_editor(media: str | Path, threshold: str = "4%", margin: str = "0.2s", 
     return merge(ranges)
 
 
-def from_words(words: list[dict], gap: float = 0.7, start: float = 0.0, end: Optional[float] = None, pad: float = 0.15) -> list[Range]:
+def from_words(words: list[dict], gap: float = 0.7, start: float = 0.0, end: float | None = None, pad: float = 0.15) -> list[Range]:
     ws = [w for w in words if w["end"] > start and (end is None or w["start"] < end)]
     if not ws:
         return [(start, end or 0.0)]
@@ -55,7 +55,7 @@ def from_words(words: list[dict], gap: float = 0.7, start: float = 0.0, end: Opt
 
 def drop_phrases(words: list[dict], ranges: list[Range], phrases: Iterable[str], pad: float = 0.05) -> list[Range]:
     """Cut every occurrence of each phrase out of the kept ranges."""
-    norm = lambda s: [re.sub(r"[^a-z0-9']", "", t.lower()) for t in s.split()]  # noqa: E731
+    norm = lambda s: [re.sub(r"[^a-z0-9']", "", t.lower()) for t in s.split()]
     toks = [(norm(w["word"]) or [""])[0] for w in words]
     holes: list[Range] = []
     for ph in phrases:

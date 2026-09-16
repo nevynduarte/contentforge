@@ -17,9 +17,8 @@ from __future__ import annotations
 
 import json
 import subprocess
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -46,7 +45,7 @@ class Segment:
     end: float
     shot: str = "auto"
     seat: str = "auto"           # L | R | auto
-    image: Optional[str] = None  # reference image path for speaker_image / image
+    image: str | None = None  # reference image path for speaker_image / image
 
     @property
     def duration(self) -> float:
@@ -67,7 +66,7 @@ class ShotPlan:
         return Path(path)
 
     @classmethod
-    def load(cls, path: str | Path) -> "ShotPlan":
+    def load(cls, path: str | Path) -> ShotPlan:
         d = json.loads(Path(path).read_text(encoding="utf-8"))
         return cls([Segment(**s) for s in d["segments"]], d.get("question", ""), d.get("captions", True), d.get("logo", True), d.get("upscale", "fast"))
 
@@ -96,8 +95,8 @@ def analysis_for(clip: Path, every: float = 0.2, force: bool = False) -> tuple[T
 # ---------------------------------------------------------------------------
 # automatic plans
 # ---------------------------------------------------------------------------
-def auto_plan(clip: Path, keep: list[tuple[float, float]], question: str = "", image: Optional[str] = None,
-              prefer: str = "speaker", turns: Optional[list[dict]] = None) -> ShotPlan:
+def auto_plan(clip: Path, keep: list[tuple[float, float]], question: str = "", image: str | None = None,
+              prefer: str = "speaker", turns: list[dict] | None = None) -> ShotPlan:
     """Build a plan from kept ranges. At every join where a fragment was removed, the shot changes
     (speaker -> both / image, or the other speaker) so the cut reads as an edit, not a glitch."""
     if turns is None:
@@ -133,7 +132,7 @@ def _portrait_crop(box: tuple[float, float, float, float], aspect: float, src_w:
     return x, y, int(cw), int(ch)
 
 
-def _resize(img: np.ndarray, w: int, h: int, up: Optional[object]) -> np.ndarray:
+def _resize(img: np.ndarray, w: int, h: int, up: object | None) -> np.ndarray:
     """Resize with optional model upscale when enlarging by more than ~1.2x."""
     sh, sw = img.shape[:2]
     if up is not None and w / sw > 1.6:
@@ -258,8 +257,8 @@ class Banner:
 # ---------------------------------------------------------------------------
 # renderer
 # ---------------------------------------------------------------------------
-def render(clip: str | Path, plan: ShotPlan, dst: str | Path, words: Optional[list[dict]] = None,
-           brand: Optional[Brand] = None, tracks: Optional[Tracks] = None, turns: Optional[list[dict]] = None,
+def render(clip: str | Path, plan: ShotPlan, dst: str | Path, words: list[dict] | None = None,
+           brand: Brand | None = None, tracks: Tracks | None = None, turns: list[dict] | None = None,
            fps: float = 30.0, crf: int = 19, gpu: bool = True) -> Path:
     clip, dst = Path(clip), Path(dst)
     brand = brand or Brand()
@@ -410,8 +409,8 @@ def _decode(clip: Path, start: float, duration: float, fps: float):
 #   landscape : full frame, banner top-left, captions bottom, lockup bottom-right
 #   sidebyside: each seat cropped head-and-torso into its own 960x1080 half
 # ---------------------------------------------------------------------------
-def render_landscape(clip: str | Path, plan: ShotPlan, dst: str | Path, words: Optional[list[dict]] = None,
-                     brand: Optional[Brand] = None, mode: str = "landscape", tracks: Optional[Tracks] = None,
+def render_landscape(clip: str | Path, plan: ShotPlan, dst: str | Path, words: list[dict] | None = None,
+                     brand: Brand | None = None, mode: str = "landscape", tracks: Tracks | None = None,
                      fps: float = 30.0, crf: int = 19, gpu: bool = True) -> Path:
     clip, dst = Path(clip), Path(dst)
     brand = brand or Brand()

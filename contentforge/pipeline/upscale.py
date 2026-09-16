@@ -7,8 +7,6 @@ ComfyUI later; this module is the fast per-frame path.
 """
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from ..utils.paths import model_path
@@ -19,8 +17,8 @@ _models: dict[str, object] = {}
 def _load(name: str):
     if name in _models:
         return _models[name]
-    import torch  # type: ignore
     import spandrel  # type: ignore
+    import torch  # type: ignore
     m = spandrel.ModelLoader().load_from_file(str(model_path(name)))
     m.eval()
     if torch.cuda.is_available():
@@ -41,7 +39,7 @@ class Upscaler:
         self.torch = torch
         self.scale = getattr(self.m, "scale", 4)
 
-    def __call__(self, rgb: np.ndarray, out_size: Optional[tuple[int, int]] = None) -> np.ndarray:
+    def __call__(self, rgb: np.ndarray, out_size: tuple[int, int] | None = None) -> np.ndarray:
         """Upscale; if out_size=(w, h) is given, resize on the GPU (antialiased) before returning."""
         torch = self.torch
         x = torch.from_numpy(np.ascontiguousarray(rgb)).permute(2, 0, 1).unsqueeze(0).float() / 255.0
@@ -67,7 +65,7 @@ def available() -> bool:
         return False
 
 
-def get(quality: str = "fast") -> Optional[Upscaler]:
+def get(quality: str = "fast") -> Upscaler | None:
     if quality == "none" or not available():
         return None
     return Upscaler(denoise_mix=0.3 if quality == "clean" else 0.0)

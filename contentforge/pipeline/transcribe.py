@@ -10,8 +10,8 @@ import glob
 import json
 import os
 import site
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional
 
 from rich.console import Console
 
@@ -34,7 +34,7 @@ def _enable_cuda_dlls() -> None:
 _MODEL_CACHE: dict[tuple[str, str, str], object] = {}
 
 
-def load_model(model: str = "large-v3", device: str = "auto", compute_type: Optional[str] = None):
+def load_model(model: str = "large-v3", device: str = "auto", compute_type: str | None = None):
     _enable_cuda_dlls()
     from faster_whisper import WhisperModel  # heavy import, keep lazy
 
@@ -70,14 +70,14 @@ def write_srt(segments: Iterable[dict], path: str | Path) -> Path:
 
 def transcribe(
     media: str | Path,
-    words_json: Optional[str | Path] = None,
-    srt: Optional[str | Path] = None,
+    words_json: str | Path | None = None,
+    srt: str | Path | None = None,
     model: str = "large-v3",
-    language: Optional[str] = "en",
+    language: str | None = "en",
     device: str = "auto",
     beam_size: int = 5,
-    initial_prompt: Optional[str] = None,
-    vad: Optional[bool] = None,
+    initial_prompt: str | None = None,
+    vad: bool | None = None,
 ) -> dict:
     """Transcribe with word timestamps. Returns {"words": [...], "segments": [...], "language": str}.
 
@@ -107,6 +107,46 @@ def transcribe(
     if srt:
         write_srt(segments, srt)
     return {"words": words, "segments": segments, "language": info.language}
+
+
+def transcribe_project(project, sessions: bool = False, model: str | None = None, force: bool = False) -> dict[str, Path]:
+    """Word-level transcripts for a project's clips (or its session encodes), plus a combined Markdown transcript.
+
+    Clips: edit/studio/clip_XX_*_studio.mp4 -> captions/clip_XX_words.json + .srt, captions/all_clips_transcript.md
+    Sessions: edit/studio/sessions/*_studio.mp4 -> captions/<session>_words.json + .srt, captions/full_transcript.md
+    """
+    import glob
+    model = model or project.whisper_model
+    cap = project.captions_dir
+    cap.mkdir(parents=True, exist_ok=True)
+    pattern = str(project.studio_dir / "sessions" / "*_studio.mp4") if sessions else str(project.studio_dir / "clip_*_studio.mp4")
+    outputs: dict[str, Path] = {}
+    for f in sorted(glob.glob(pattern)):
+        stem = Path(f).stem.replace("_studio", "")
+        stem = stem.split("_")[0] + "_" + stem.split("_")[1] if stem.startswith("clip_") else stem
+        wj = cap / f"{stem}_words.json"
+        if not wj.exists() or force:
+            transcribe(f, wj, cap / f"{stem}.srt", model=model)
+        outputs[stem] = wj
+    combined = cap / ("full_transcript.md" if sessions else "all_clips_transcript.md")
+    lines = [f"# {project.brand.show} - {project.episode}" + (" - full transcript" if sessions else " - selected clips"), ""]
+    for stem, wj in outputs.items():
+        words = load_words(wj)
+        lines.append(f"\n## {stem}\n")
+        para, last = [], 0.0
+        for w in words:
+            if para and (w["start"] - last > 1.5 or len(para) > 120) and para[-1]["word"].strip().endswith((".", "?", "!")):
+                m, s = divmod(int(para[0]["start"]), 60)
+                lines.append(f"[{m:02d}:{s:02d}] " + " ".join("".join(x["word"] for x in para).split()))
+                para = []
+            para.append(w)
+            last = w["end"]
+        if para:
+            m, s = divmod(int(para[0]["start"]), 60)
+            lines.append(f"[{m:02d}:{s:02d}] " + " ".join("".join(x["word"] for x in para).split()))
+    combined.write_text("\n".join(lines), encoding="utf-8")
+    outputs["combined"] = combined
+    return outputs
 
 
 def load_words(path: str | Path) -> list[dict]:

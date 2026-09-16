@@ -1,0 +1,95 @@
+# Short-form windows: 30-60 s moments defined by transcript anchors (first words / last words),
+# so timings come from the word JSON rather than hand-typed seconds.
+# image: optional reference image (relative to the project root) for speaker_image / image layouts.
+windows:
+  - id: zillow
+    clip: clip_02
+    question: "How did you sell your parents' house on Zillow in eighth grade?"
+    start: "sold my house on zillow"
+    end: "posed as my mom"
+  - id: bears
+    clip: clip_03
+    question: "Where did the idea for the safety app come from?"
+    start: "so i facetimed my friend chris"
+    end: "does have that integration"
+    image: edit/refs/bears.png
+  - id: wrapper
+    clip: clip_04
+    question: "Is your product just a ChatGPT wrapper?"
+    start: "people in the comments"
+    end: "unless you execute"
+    image: edit/refs/wrapper.png
+  - id: patents
+    clip: clip_04
+    question: "Do you need a patent to start a company?"
+    start: "a lot of especially angel investors"
+    end: "legal fees to enforce this"
+  - id: snapchat
+    clip: clip_05
+    question: "How did you fund the first version?"
+    start: "reached out to my two friends"
+    end: "friend slash investor"
+  - id: misread
+    clip: clip_06
+    question: "What happens when AI gets a safety call wrong?"
+    start: "the way they prompted their ai"
+    end: "before putting out that type of thing"
+  - id: extra_zero
+    clip: clip_01
+    question: "Why keep a human in the loop?"
+    start: "what if ai misread one of the quotes"
+    end: "human in the loop"
+  - id: car_leases
+    clip: clip_07
+    question: "What were you hustling on before AI?"
+    start: "went into like consulting"
+    end: "stuff like that growing up"
+  - id: outage
+    clip: clip_09
+    question: "What did the big cloud outage teach you?"
+    start: "was it microsoft or aws"
+    end: "went up instead of down"
+    image: edit/refs/outage.png
+  - id: backend
+    clip: clip_10
+    question: "Where should AI never touch your product?"
+    start: "there's a reason you said"
+    end: "leave the human in the loop"
+    image: edit/refs/backend.png
+  - id: smb
+    clip: clip_10
+    question: "How do you bring AI into a 40-year-old business?"
+    start: "what we really want to do is come in"
+    end: "done by humans still"
+    image: edit/refs/smb.png
+
+# Diagrams (Mermaid) that generated the reference images above; regenerate with `contentforge diagrams <project>`.
+diagrams:
+  bears: |
+    flowchart TD
+      A["Night run, bears nearby"] --> B["FaceTime a friend"]
+      B --> C["Nothing recorded, no location"]
+      C --> D["Friend must hang up to call 911"]
+      D --> E["Idea: stream + record + share, wired to 911"]
+  wrapper: |
+    flowchart TD
+      A["Flashlight"] --> B["Car headlight"]
+      B --> C["Everything is a wrapper"]
+      C --> D["What matters: how you build it, market it, ship it"]
+  outage: |
+    flowchart TD
+      A["One cloud vendor goes down"] --> B["YouTube, Spotify, your app: offline"]
+      B --> C["The whole world sees the dependency"]
+      C --> D["Vendor stock goes UP"]
+  backend: |
+    flowchart TD
+      A["AI is fine here: front-end, UI, mock-ups, prototypes"] --> B["Ships faster"]
+      C["Keep a human in the loop: back-end, security, privacy"] --> D["Stays watertight"]
+      B --> E["Decide what stays human"]
+      D --> E
+  smb: |
+    flowchart TD
+      A["Sit with the owner, map the day"] --> B["Email: 60 min becomes 15"]
+      A --> C["Mock-ups: 5 h/week becomes an AI draft"]
+      B --> D["A human decides what stays human"]
+      C --> D

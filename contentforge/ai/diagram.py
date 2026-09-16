@@ -10,7 +10,6 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 from ..config import Brand
 from ..utils.paths import MODELS_DIR
@@ -19,11 +18,11 @@ _MMDC_CANDIDATES = [os.environ.get("CONTENTFORGE_MMDC"), str(MODELS_DIR.parent /
                     str(MODELS_DIR.parent / "npm/node_modules/.bin/mmdc"), shutil.which("mmdc")]
 
 
-def mmdc_path() -> Optional[str]:
+def mmdc_path() -> str | None:
     return next((p for p in _MMDC_CANDIDATES if p and Path(p).exists()), None)
 
 
-def mermaid_to_png(source: str, dst: str | Path, brand: Optional[Brand] = None, width: int = 1080, scale: int = 2,
+def mermaid_to_png(source: str, dst: str | Path, brand: Brand | None = None, width: int = 1080, scale: int = 2,
                    theme: str = "base") -> Path:
     """Render Mermaid text to PNG with brand colours, transparent background."""
     mmdc = mmdc_path()
@@ -48,7 +47,7 @@ def mermaid_to_png(source: str, dst: str | Path, brand: Optional[Brand] = None, 
     return Path(dst)
 
 
-def card(title: str, subtitle: str, dst: str | Path, brand: Optional[Brand] = None, w: int = 1080, h: int = 760) -> Path:
+def card(title: str, subtitle: str, dst: str | Path, brand: Brand | None = None, w: int = 1080, h: int = 760) -> Path:
     from ..pipeline.brand import title_card
     title_card(brand or Brand(), title, subtitle, w, h, dst=Path(dst))
     return Path(dst)

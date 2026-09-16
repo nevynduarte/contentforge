@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import glob
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional
 
 from rich.console import Console
 
@@ -22,7 +22,7 @@ def studio_path(project: Project, c: ClipDef) -> Path:
     return project.studio_dir / f"{c.id}_{src_stem}_{int(c.start)}s_studio.mp4"
 
 
-def find_studio(project: Project, clip_id: str) -> Optional[Path]:
+def find_studio(project: Project, clip_id: str) -> Path | None:
     hits = sorted(glob.glob(str(project.studio_dir / f"{clip_id}_*_studio.mp4")))
     return Path(hits[0]) if hits else None
 
@@ -51,7 +51,7 @@ def ensure_words(project: Project, c: ClipDef, studio: Path, force: bool = False
     return wp
 
 
-def run(project: Project, clip_ids: Optional[Iterable[str]] = None, presets: Optional[list[str]] = None,
+def run(project: Project, clip_ids: Iterable[str] | None = None, presets: list[str] | None = None,
         force_grade: bool = False, force_words: bool = False, force_render: bool = False, gpu: bool = False,
         show_logo: bool = True) -> list[dict]:
     presets = presets or project.presets

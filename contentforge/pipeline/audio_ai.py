@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
@@ -26,8 +25,8 @@ def _write(path: str | Path, audio: np.ndarray, sr: int = SR, bitrate: str = "19
 
 def denoise(src: str | Path, dst: str | Path) -> Path:
     """DeepFilterNet3 speech enhancement -> mono AAC at 48 kHz."""
-    from df.enhance import enhance, init_df  # type: ignore
     import torch  # type: ignore
+    from df.enhance import enhance, init_df  # type: ignore
     model, df_state, _ = init_df()
     audio = _read(src, df_state.sr())
     out = enhance(model, df_state, torch.from_numpy(audio)[None, :])
@@ -36,7 +35,7 @@ def denoise(src: str | Path, dst: str | Path) -> Path:
 
 def voice_chain(audio: np.ndarray, sr: int = SR) -> np.ndarray:
     """Podcast voice dynamics in pedalboard (mirrors the ffmpeg chain, but usable on numpy buffers)."""
-    from pedalboard import Pedalboard, HighpassFilter, LowpassFilter, NoiseGate, Compressor, PeakFilter, Limiter  # type: ignore
+    from pedalboard import Compressor, HighpassFilter, Limiter, LowpassFilter, NoiseGate, PeakFilter, Pedalboard  # type: ignore
     board = Pedalboard([
         HighpassFilter(80), LowpassFilter(14000),
         NoiseGate(threshold_db=-38, ratio=4, attack_ms=5, release_ms=50),

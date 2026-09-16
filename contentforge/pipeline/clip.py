@@ -6,8 +6,6 @@ by default, optionally refined by an LLM (see ai.content_scorer).
 """
 from __future__ import annotations
 
-from typing import Optional
-
 from ..ai.content_scorer import ClipScore, heuristic_score, llm_score
 
 
@@ -63,7 +61,7 @@ def best_clips(words: list[dict], n: int = 5, platform: str = "Instagram Reel", 
     cands = propose(words, **kw)
     if use_llm:
         for c in cands[:llm_top_k]:
-            r: Optional[dict] = llm_score(c.text, platform)
+            r: dict | None = llm_score(c.text, platform)
             if r:
                 c.total = round(0.5 * c.total + 0.05 * float(r.get("virality", 0)), 3)
                 c.reasons.append(f"llm: {r.get('why', '')}")

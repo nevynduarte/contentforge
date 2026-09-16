@@ -4,10 +4,10 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, Iterable, Optional
 
 from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 
@@ -25,10 +25,10 @@ class MediaInfo:
     duration: float
     vcodec: str
     pix_fmt: str
-    acodec: Optional[str]
-    sample_rate: Optional[int]
-    channels: Optional[int]
-    bit_rate: Optional[int]
+    acodec: str | None
+    sample_rate: int | None
+    channels: int | None
+    bit_rate: int | None
 
     @property
     def is_vertical(self) -> bool:
@@ -103,9 +103,9 @@ def video_codec_args(codec: str = "libx264", crf: int = 18, preset: str = "mediu
 
 def run(
     args: Iterable[str],
-    duration: Optional[float] = None,
+    duration: float | None = None,
     description: str = "ffmpeg",
-    on_progress: Optional[Callable[[float], None]] = None,
+    on_progress: Callable[[float], None] | None = None,
     show_progress: bool = True,
 ) -> None:
     """Run ffmpeg with a Rich progress bar driven by -progress output."""
@@ -120,7 +120,7 @@ def run(
         task = progress.add_task(description, total=duration or 1.0)
         assert proc.stdout is not None
         for line in proc.stdout:
-            if line.startswith("out_time_us=") or line.startswith("out_time_ms="):
+            if line.startswith(("out_time_us=", "out_time_ms=")):
                 try:
                     t = int(line.split("=")[1]) / 1_000_000
                 except ValueError:
@@ -137,7 +137,7 @@ def run(
         raise FFmpegError(f"ffmpeg exited {proc.returncode}: {err[-2000:]}")
 
 
-def extract_frame(path: str | Path, t: float, out: str | Path, width: Optional[int] = None) -> Path:
+def extract_frame(path: str | Path, t: float, out: str | Path, width: int | None = None) -> Path:
     vf = f"scale={width}:-2" if width else "null"
     subprocess.run([which("ffmpeg"), "-hide_banner", "-loglevel", "error", "-y", "-ss", str(t),
                     "-i", str(path), "-frames:v", "1", "-vf", vf, str(out)], check=True)

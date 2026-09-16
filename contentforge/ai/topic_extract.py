@@ -9,11 +9,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 
-STOP = set("""a an the and or but if then so of to in on at for with from by as is are was were be been being it its this
-that these those i you he she we they me him her us them my your his our their what which who whom when where why how
-not no yes do does did done have has had having can could would should will shall may might must just like very really
-about into over under again also there here up down out off than too more most some any all each every both few own
-same other such only same um uh yeah okay right know think mean going get got go one two""".split())
+STOP = set(["a", "an", "the", "and", "or", "but", "if", "then", "so", "of", "to", "in", "on", "at", "for", "with", "from", "by", "as", "is", "are", "was", "were", "be", "been", "being", "it", "its", "this", "that", "these", "those", "i", "you", "he", "she", "we", "they", "me", "him", "her", "us", "them", "my", "your", "his", "our", "their", "what", "which", "who", "whom", "when", "where", "why", "how", "not", "no", "yes", "do", "does", "did", "done", "have", "has", "had", "having", "can", "could", "would", "should", "will", "shall", "may", "might", "must", "just", "like", "very", "really", "about", "into", "over", "under", "again", "also", "there", "here", "up", "down", "out", "off", "than", "too", "more", "most", "some", "any", "all", "each", "every", "both", "few", "own", "same", "other", "such", "only", "same", "um", "uh", "yeah", "okay", "right", "know", "think", "mean", "going", "get", "got", "go", "one", "two"])
 
 HOOK_CUES = ("never", "nobody", "secret", "mistake", "biggest", "honestly", "truth", "?", "always", "wrong", "changed")
 

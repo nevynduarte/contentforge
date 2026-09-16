@@ -8,9 +8,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from contentforge.config import Project  # noqa: E402
-from contentforge.pipeline.bumper import append_outro  # noqa: E402
-from contentforge.utils import ffmpeg  # noqa: E402
+from contentforge.config import Project
+from contentforge.pipeline.bumper import append_outro
+from contentforge.utils import ffmpeg
 
 
 def main() -> None:

@@ -6,8 +6,8 @@ single decode/encode pass produces captions + branding together.
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 
 from PIL import Image, ImageDraw
 
@@ -17,7 +17,7 @@ from ..utils.colors import hex_to_rgb, hex_to_rgba
 from .captions import load_font
 
 
-def _logo_image(brand: Brand, width: int) -> Optional[Image.Image]:
+def _logo_image(brand: Brand, width: int) -> Image.Image | None:
     if not brand.logo or not Path(brand.logo).exists():
         return None
     img = Image.open(brand.logo).convert("RGBA")
@@ -25,7 +25,7 @@ def _logo_image(brand: Brand, width: int) -> Optional[Image.Image]:
     return img.resize((width, max(1, int(img.height * scale))), Image.LANCZOS)
 
 
-def lower_third_image(brand: Brand, name: str, title: str = "", width: int = 1080, fonts_dir: Optional[Path] = None) -> Image.Image:
+def lower_third_image(brand: Brand, name: str, title: str = "", width: int = 1080, fonts_dir: Path | None = None) -> Image.Image:
     """Clean minimal lower third: accent bar + name (bold) + title (muted)."""
     fonts_dir = fonts_dir or brand.fonts_dir
     name_font = load_font(brand.captions.font, 44, [fonts_dir] if fonts_dir else None)
@@ -51,12 +51,12 @@ def frame_hook(
     brand: Brand,
     out_w: int,
     out_h: int,
-    lower_third: Optional[dict] = None,   # {"name":..., "title":..., "start": t, "end": t, "y": px}
+    lower_third: dict | None = None,   # {"name":..., "title":..., "start": t, "end": t, "y": px}
     show_logo: bool = True,
     logo_width: int = 140,
     logo_margin: int = 40,
     progress_bar: bool = False,
-    duration: Optional[float] = None,
+    duration: float | None = None,
 ) -> Callable[[Image.Image, float], Image.Image]:
     """Return a per-frame compositor for the caption renderer."""
     # letterboxed social clips leave an empty band under the captions: centre a large lockup there
@@ -90,7 +90,7 @@ def frame_hook(
     return hook
 
 
-def title_card(brand: Brand, title: str, subtitle: str = "", out_w: int = 1080, out_h: int = 1920, dst: Optional[Path] = None) -> Image.Image:
+def title_card(brand: Brand, title: str, subtitle: str = "", out_w: int = 1080, out_h: int = 1920, dst: Path | None = None) -> Image.Image:
     """Static branded title card (used for intro stills and thumbnails)."""
     img = Image.new("RGB", (out_w, out_h), hex_to_rgb(brand.colors["primary"]))
     d = ImageDraw.Draw(img)
@@ -119,7 +119,7 @@ def title_card(brand: Brand, title: str, subtitle: str = "", out_w: int = 1080, 
     return img
 
 
-def concat_with_bumpers(main: Path, dst: Path, intro: Optional[Path] = None, outro: Optional[Path] = None,
+def concat_with_bumpers(main: Path, dst: Path, intro: Path | None = None, outro: Path | None = None,
                         fade: float = 0.5, gpu: bool = False) -> Path:
     """Concatenate intro + main + outro with crossfades (re-encodes; all inputs must share resolution)."""
     parts = [p for p in (intro, main, outro) if p and Path(p).exists()]
