@@ -77,10 +77,18 @@ def transcribe(
     device: str = "auto",
     beam_size: int = 5,
     initial_prompt: Optional[str] = None,
-    vad: bool = True,
+    vad: Optional[bool] = None,
 ) -> dict:
-    """Transcribe with word timestamps. Returns {"words": [...], "segments": [...], "language": str}."""
+    """Transcribe with word timestamps. Returns {"words": [...], "segments": [...], "language": str}.
+
+    vad=None picks a default: on. Except on Windows with CUDA, where importing onnxruntime
+    (Silero VAD) after the CUDA model is loaded crashes the process (0xc000070a); there it is off.
+    Set CONTENTFORGE_VAD=1 to force it on.
+    """
     wm = load_model(model, device)
+    if vad is None:
+        cuda_win = os.name == "nt" and getattr(wm, "model", None) is not None and wm.model.device == "cuda"
+        vad = os.environ.get("CONTENTFORGE_VAD") == "1" or not cuda_win
     seg_iter, info = wm.transcribe(
         str(media), language=language, beam_size=beam_size, word_timestamps=True,
         vad_filter=vad, vad_parameters={"min_silence_duration_ms": 300}, initial_prompt=initial_prompt,
@@ -89,10 +97,10 @@ def transcribe(
     words: list[dict] = []
     segments: list[dict] = []
     for seg in seg_iter:
-        segments.append({"start": round(seg.start, 3), "end": round(seg.end, 3), "text": seg.text})
+        segments.append({"start": round(float(seg.start), 3), "end": round(float(seg.end), 3), "text": seg.text})
         for w in seg.words or []:
-            words.append({"word": w.word, "start": round(w.start, 3), "end": round(w.end, 3),
-                          "probability": round(w.probability, 3)})
+            words.append({"word": w.word, "start": round(float(w.start), 3), "end": round(float(w.end), 3),
+                          "probability": round(float(w.probability), 3)})
     if words_json:
         Path(words_json).parent.mkdir(parents=True, exist_ok=True)
         Path(words_json).write_text(json.dumps(words, indent=2, ensure_ascii=False), encoding="utf-8")
