@@ -244,7 +244,7 @@ class Banner:
         if shot in ("speaker", "speaker_image"):
             # full-bleed video at the bottom: small lockup bottom-left, above the safe zone, with a soft shadow
             lg = self.logo
-            x, y = 40, H - lg.height - 120
+            x, y = 40, H - lg.height - (60 if shot == "speaker_image" else 120)
             shadow = Image.new("RGBA", lg.size, (0, 0, 0, 0))
             shadow.paste((0, 0, 0, 140), (0, 0, *lg.size), lg)
             frame.paste(shadow, (x + 2, y + 3), shadow)
@@ -287,7 +287,7 @@ def render(clip: str | Path, plan: ShotPlan, dst: str | Path, words: Optional[li
             if s.start <= w["start"] < s.end:
                 out_words.append({**w, "start": w["start"] - s.start + t_out, "end": min(w["end"], s.end) - s.start + t_out})
         t_out += s.duration
-    cap_y = {"both": 960, "speaker": 1560, "stacked": 1715, "speaker_image": 1700, "image": 1610}
+    cap_y = {"both": 960, "speaker": 1560, "stacked": 1715, "speaker_image": 1630, "image": 1610}
 
     total_frames = int(plan.duration * fps)
     dst.parent.mkdir(parents=True, exist_ok=True)
